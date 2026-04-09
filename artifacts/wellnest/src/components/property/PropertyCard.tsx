@@ -2,13 +2,21 @@ import { Property } from "@workspace/api-client-react/src/generated/api.schemas"
 import { Link } from "wouter";
 import { MapPin, Users } from "lucide-react";
 
+const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
 interface PropertyCardProps {
   property: Property;
   showCategory?: boolean;
+  showMonthBadge?: boolean;
 }
 
-export function PropertyCard({ property, showCategory }: PropertyCardProps) {
+export function PropertyCard({ property, showCategory, showMonthBadge }: PropertyCardProps) {
   const mainImage = property.images?.[0] || "/images/property-placeholder.png";
+
+  const monthBadgeText =
+    showMonthBadge && property.pickMonth && property.pickYear
+      ? `${MONTH_SHORT[(property.pickMonth as number) - 1]} ${property.pickYear}`
+      : null;
 
   return (
     <Link href={`/properties/${property.id}`} className="group block h-full">
@@ -19,6 +27,11 @@ export function PropertyCard({ property, showCategory }: PropertyCardProps) {
           className="object-cover w-full h-full transition-transform duration-700 ease-out group-hover:scale-105"
         />
         <div className="absolute inset-0 bg-black/10 transition-opacity duration-300 group-hover:opacity-0" />
+        {monthBadgeText && (
+          <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2.5 py-1 text-[10px] font-medium tracking-widest uppercase text-foreground">
+            {monthBadgeText}
+          </div>
+        )}
       </div>
       <div className="space-y-1.5">
         {showCategory && (

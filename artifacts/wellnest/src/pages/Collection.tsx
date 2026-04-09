@@ -109,7 +109,7 @@ export function Collection() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-16">
               {properties?.map((property) => (
-                <PropertyCard key={property.id} property={property} />
+                <PropertyCard key={property.id} property={property} showCategory showMonthBadge />
               ))}
             </div>
           </div>

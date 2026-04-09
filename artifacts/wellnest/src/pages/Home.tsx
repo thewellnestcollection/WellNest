@@ -1,133 +1,151 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useGetMonthlyPicks } from "@workspace/api-client-react";
 import { PropertyCard } from "@/components/property/PropertyCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December"
 ];
+const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-interface MonthTab {
-  month: number;
-  year: number;
-  label: string;
-  shortLabel: string;
+const NOW = new Date();
+const CURRENT_YEAR = NOW.getFullYear();
+const CURRENT_MONTH = NOW.getMonth() + 1;
+const LAUNCH_YEAR = 2024;
+
+const AVAILABLE_YEARS = Array.from(
+  { length: CURRENT_YEAR - LAUNCH_YEAR + 1 },
+  (_, i) => CURRENT_YEAR - i
+);
+
+function getMonthsForYear(year: number): number[] {
+  const maxMonth = year === CURRENT_YEAR ? CURRENT_MONTH : 12;
+  return Array.from({ length: maxMonth }, (_, i) => maxMonth - i);
 }
-
-function generateMonthTabs(count = 18): MonthTab[] {
-  const tabs: MonthTab[] = [];
-  const now = new Date();
-  let month = now.getMonth() + 1;
-  let year = now.getFullYear();
-  for (let i = 0; i < count; i++) {
-    tabs.push({
-      month,
-      year,
-      label: `${MONTH_NAMES[month - 1]} ${year}`,
-      shortLabel: `${MONTH_NAMES[month - 1].slice(0, 3)} ${year}`,
-    });
-    month--;
-    if (month === 0) {
-      month = 12;
-      year--;
-    }
-  }
-  return tabs;
-}
-
-const MONTH_TABS = generateMonthTabs(18);
 
 export function Home() {
-  const [selectedIndex, setSelectedIndex] = useState(0);
-  const selected = MONTH_TABS[selectedIndex];
+  const picksRef = useRef<HTMLElement>(null);
+  const [selectedYear, setSelectedYear] = useState(CURRENT_YEAR);
+  const [selectedMonth, setSelectedMonth] = useState(CURRENT_MONTH);
+
+  const months = getMonthsForYear(selectedYear);
+
+  const handleYearChange = (year: number) => {
+    setSelectedYear(year);
+    const newMonths = getMonthsForYear(year);
+    setSelectedMonth(newMonths[0]);
+  };
 
   const { data: monthlyPicks, isLoading } = useGetMonthlyPicks(
-    { month: selected.month, year: selected.year },
+    { month: selectedMonth, year: selectedYear },
     { query: { staleTime: 60_000 } }
   );
+
+  const scrollToPicks = () => {
+    picksRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
   return (
     <main className="flex-1">
       {/* Hero */}
-      <section className="relative h-[75vh] min-h-[550px] flex items-center justify-center overflow-hidden">
+      <section className="relative h-[80vh] min-h-[580px] flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 z-0">
           <img
             src="/images/hero-bg.png"
             alt="UK countryside"
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-black/30" />
+          <div className="absolute inset-0 bg-black/35" />
         </div>
-        <div className="relative z-10 text-center px-4 max-w-4xl mx-auto space-y-6">
-          <p className="text-white/75 uppercase tracking-[0.35em] text-xs font-medium">
+        <div className="relative z-10 text-center px-4 max-w-3xl mx-auto space-y-7">
+          <p className="text-white/70 uppercase tracking-[0.4em] text-xs font-medium">
             The WellNest Collection
           </p>
-          <h1 className="text-5xl md:text-7xl font-serif text-white leading-tight drop-shadow-md">
-            Property of<br />the Month
+          <h1 className="text-5xl md:text-[4.5rem] font-serif text-white leading-[1.1] drop-shadow-md">
+            Handpicked wellness stays across the UK
           </h1>
-          <p className="text-lg md:text-xl text-white/85 font-light max-w-xl mx-auto drop-shadow">
-            One handpicked stay per category — curated monthly across the UK.
+          <p className="text-lg md:text-xl text-white/80 font-light max-w-xl mx-auto leading-relaxed">
+            Follow our monthly curation — one extraordinary retreat per category, chosen for those who value rest and renewal.
           </p>
+          <div className="pt-2 flex flex-col sm:flex-row gap-3 items-center justify-center">
+            <button
+              onClick={scrollToPicks}
+              className="bg-white text-foreground hover:bg-white/90 transition-colors px-8 py-3 text-xs tracking-widest uppercase font-medium"
+            >
+              See This Month's Picks
+            </button>
+            <Link href="/collection">
+              <button className="border border-white/60 text-white hover:bg-white/10 transition-colors px-8 py-3 text-xs tracking-widest uppercase font-medium">
+                Browse The Collection
+              </button>
+            </Link>
+          </div>
         </div>
       </section>
 
       {/* Monthly Picks Section */}
-      <section className="py-16 md:py-24 container mx-auto px-4 md:px-6">
+      <section ref={picksRef} className="py-16 md:py-24 container mx-auto px-4 md:px-6">
 
-        {/* Header + arrows */}
+        {/* Header: year on left, year dropdown on right */}
         <div className="flex items-start justify-between gap-4 mb-8">
           <div>
             <p className="text-xs uppercase tracking-widest text-muted-foreground mb-2">
               Monthly Selection
             </p>
             <h2 className="text-3xl md:text-4xl font-serif">
-              {selected.label}
+              {selectedYear}
             </h2>
           </div>
-          <div className="flex items-center gap-2 mt-2">
-            <Button
-              variant="outline"
-              size="icon"
-              className="rounded-none w-9 h-9"
-              disabled={selectedIndex === 0}
-              onClick={() => setSelectedIndex((i) => i - 1)}
-              aria-label="Newer month"
+          <div className="mt-2">
+            <Select
+              value={String(selectedYear)}
+              onValueChange={(v) => handleYearChange(Number(v))}
             >
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              className="rounded-none w-9 h-9"
-              disabled={selectedIndex === MONTH_TABS.length - 1}
-              onClick={() => setSelectedIndex((i) => i + 1)}
-              aria-label="Older month"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </Button>
+              <SelectTrigger className="w-28 rounded-none border-border bg-transparent text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {AVAILABLE_YEARS.map((year) => (
+                  <SelectItem key={year} value={String(year)}>
+                    {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
-        {/* Month tab strip */}
-        <div className="flex gap-1.5 overflow-x-auto pb-3 mb-12 scrollbar-none">
-          {MONTH_TABS.map((tab, i) => (
+        {/* Month tab strip — only months for the selected year */}
+        <div className="flex gap-1.5 flex-wrap mb-12">
+          {months.map((month) => (
             <button
-              key={`${tab.month}-${tab.year}`}
-              onClick={() => setSelectedIndex(i)}
-              className={`flex-shrink-0 px-4 py-1.5 text-xs font-medium border transition-all duration-150 ${
-                i === selectedIndex
+              key={month}
+              onClick={() => setSelectedMonth(month)}
+              className={`px-5 py-2 text-xs font-medium border transition-all duration-150 ${
+                month === selectedMonth
                   ? "bg-foreground text-background border-foreground"
                   : "bg-transparent text-muted-foreground border-border hover:border-foreground/40 hover:text-foreground"
               }`}
             >
-              {tab.shortLabel}
+              {MONTH_SHORT[month - 1]}
             </button>
           ))}
         </div>
+
+        {/* Current selection label */}
+        <p className="text-sm text-muted-foreground mb-8">
+          {MONTH_NAMES[selectedMonth - 1]} {selectedYear}
+        </p>
 
         {/* Grid */}
         {isLoading ? (
@@ -147,7 +165,7 @@ export function Home() {
               Nothing curated yet
             </p>
             <p className="text-sm text-muted-foreground">
-              No picks have been selected for {selected.label}.
+              No picks have been selected for {MONTH_NAMES[selectedMonth - 1]} {selectedYear}.
             </p>
           </div>
         ) : (
@@ -159,7 +177,7 @@ export function Home() {
         )}
       </section>
 
-      {/* Editorial / About strip */}
+      {/* Definition / About section */}
       <section className="py-24 bg-white border-t border-border">
         <div className="container mx-auto px-4 md:px-6">
           <div className="grid md:grid-cols-2 gap-12 items-center">
@@ -170,25 +188,44 @@ export function Home() {
                 className="object-cover w-full h-full"
               />
             </div>
-            <div className="space-y-6 md:pl-12 lg:pl-24">
-              <p className="text-xs uppercase tracking-widest text-muted-foreground">Our Curation</p>
-              <h2 className="text-4xl lg:text-5xl font-serif leading-tight">
-                The art of slowing down.
-              </h2>
-              <p className="text-lg text-muted-foreground font-light leading-relaxed">
-                We believe that where you stay matters. It's not just a bed for the night, but the backdrop to your memories. The WellNest Collection brings together the most thoughtfully designed spaces across the United Kingdom.
+            <div className="space-y-6 md:pl-12 lg:pl-20">
+
+              {/* Dictionary-style definition */}
+              <div className="space-y-1 pb-4 border-b border-border">
+                <div className="flex items-baseline gap-3 flex-wrap">
+                  <span className="font-serif text-2xl font-medium">WellNest</span>
+                  <span className="text-sm text-muted-foreground font-light">(noun)</span>
+                </div>
+                <p className="text-sm text-muted-foreground font-light italic tracking-wide">/ˈwɛlnəst/</p>
+                <p className="text-lg text-foreground font-light leading-relaxed pt-2">
+                  Wellness stays, redefined. A place to pause.
+                </p>
+              </div>
+
+              <p className="text-base text-muted-foreground font-light leading-relaxed">
+                We believe that where you stay matters. It's not just a bed for the night — it's the backdrop to your memories. The WellNest Collection brings together the most thoughtfully designed spaces across the United Kingdom.
               </p>
-              <p className="text-base text-muted-foreground font-light leading-relaxed pb-2">
+              <p className="text-base text-muted-foreground font-light leading-relaxed">
                 Each month we select one standout property in each of our seven categories — from working farms to grand estate manors — so you always know where to go next.
               </p>
-              <Link href="/collection">
-                <Button
-                  variant="outline"
-                  className="rounded-none border-foreground text-foreground hover:bg-foreground hover:text-background h-12 px-8 uppercase text-xs tracking-widest font-medium"
-                >
-                  Browse All Stays
-                </Button>
-              </Link>
+
+              <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                <Link href="/collection">
+                  <Button
+                    variant="outline"
+                    className="rounded-none border-foreground text-foreground hover:bg-foreground hover:text-background h-12 px-6 uppercase text-xs tracking-widest font-medium"
+                  >
+                    Browse All Stays
+                  </Button>
+                </Link>
+                <a href="mailto:hello@wellnestcollection.co.uk?subject=Newsletter%20Sign%20Up">
+                  <Button
+                    className="rounded-none bg-primary text-primary-foreground hover:bg-primary/90 h-12 px-6 uppercase text-xs tracking-widest font-medium"
+                  >
+                    Join The WellNest Collection
+                  </Button>
+                </a>
+              </div>
             </div>
           </div>
         </div>
