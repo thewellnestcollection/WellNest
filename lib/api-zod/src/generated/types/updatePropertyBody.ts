@@ -16,4 +16,6 @@ export interface UpdatePropertyBody {
   contactEmail?: string;
   images?: string[];
   featured?: boolean;
+  pickMonth?: number;
+  pickYear?: number;
 }

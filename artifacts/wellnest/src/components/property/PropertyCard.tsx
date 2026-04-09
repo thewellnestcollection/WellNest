@@ -4,9 +4,10 @@ import { MapPin, Users } from "lucide-react";
 
 interface PropertyCardProps {
   property: Property;
+  showCategory?: boolean;
 }
 
-export function PropertyCard({ property }: PropertyCardProps) {
+export function PropertyCard({ property, showCategory }: PropertyCardProps) {
   const mainImage = property.images?.[0] || "/images/property-placeholder.png";
 
   return (
@@ -18,19 +19,20 @@ export function PropertyCard({ property }: PropertyCardProps) {
           className="object-cover w-full h-full transition-transform duration-700 ease-out group-hover:scale-105"
         />
         <div className="absolute inset-0 bg-black/10 transition-opacity duration-300 group-hover:opacity-0" />
-        {property.featured && (
-          <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1 text-xs font-medium tracking-widest uppercase">
-            Featured
-          </div>
-        )}
       </div>
-      <div className="space-y-2">
+      <div className="space-y-1.5">
+        {showCategory && (
+          <p className="text-[10px] uppercase tracking-[0.2em] text-primary font-medium">
+            {property.category}
+          </p>
+        )}
         <div className="flex items-start justify-between gap-4">
           <h3 className="font-serif text-xl font-medium leading-snug group-hover:text-primary transition-colors line-clamp-1">
             {property.name}
           </h3>
           <p className="font-sans text-sm font-medium whitespace-nowrap">
-            &pound;{property.nightlyPrice} <span className="text-muted-foreground font-normal">/nt</span>
+            &pound;{property.nightlyPrice}{" "}
+            <span className="text-muted-foreground font-normal">/nt</span>
           </p>
         </div>
         <div className="flex items-center gap-4 text-sm text-muted-foreground">

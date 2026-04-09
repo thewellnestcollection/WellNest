@@ -12,6 +12,7 @@ export * from "./adminSession";
 export * from "./categoryStat";
 export * from "./createPropertyBody";
 export * from "./errorResponse";
+export * from "./getMonthlyPicksParams";
 export * from "./healthStatus";
 export * from "./listPropertiesParams";
 export * from "./property";

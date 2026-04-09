@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import logoUrl from "@assets/logo_1775747549788.png";
+import logoUrl from "@assets/logo_1775748994283.png";
 import { useAdminMe, useAdminLogout } from "@workspace/api-client-react";
 import { getAdminMeQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";

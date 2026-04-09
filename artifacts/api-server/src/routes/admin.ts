@@ -65,7 +65,7 @@ router.get("/admin/properties", async (req, res): Promise<void> => {
   const properties = await db
     .select()
     .from(propertiesTable)
-    .orderBy(propertiesTable.createdAt);
+    .orderBy(propertiesTable.pickYear, propertiesTable.pickMonth, propertiesTable.category);
 
   const result = properties.map((p) => ({
     ...p,
@@ -98,6 +98,8 @@ router.post("/admin/properties", async (req, res): Promise<void> => {
       contactEmail: parsed.data.contactEmail,
       images: parsed.data.images,
       featured: parsed.data.featured ?? false,
+      pickMonth: parsed.data.pickMonth,
+      pickYear: parsed.data.pickYear,
     })
     .returning();
 
@@ -135,6 +137,8 @@ router.patch("/admin/properties/:id", async (req, res): Promise<void> => {
   if (parsed.data.contactEmail !== undefined) updateData.contactEmail = parsed.data.contactEmail;
   if (parsed.data.images !== undefined) updateData.images = parsed.data.images;
   if (parsed.data.featured !== undefined) updateData.featured = parsed.data.featured;
+  if (parsed.data.pickMonth !== undefined) updateData.pickMonth = parsed.data.pickMonth;
+  if (parsed.data.pickYear !== undefined) updateData.pickYear = parsed.data.pickYear;
 
   const [property] = await db
     .update(propertiesTable)

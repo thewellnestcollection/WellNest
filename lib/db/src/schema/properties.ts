@@ -13,6 +13,8 @@ export const propertiesTable = pgTable("properties", {
   contactEmail: text("contact_email").notNull(),
   images: jsonb("images").$type<string[]>().notNull().default([]),
   featured: boolean("featured").notNull().default(false),
+  pickMonth: integer("pick_month"),
+  pickYear: integer("pick_year"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

@@ -20,6 +20,10 @@ export interface Property {
   contactEmail: string;
   images: string[];
   featured: boolean;
+  /** @nullable */
+  pickMonth: number | null;
+  /** @nullable */
+  pickYear: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -39,6 +43,8 @@ export interface CreatePropertyBody {
   contactEmail: string;
   images: string[];
   featured?: boolean;
+  pickMonth: number;
+  pickYear: number;
 }
 
 export interface UpdatePropertyBody {
@@ -51,6 +57,8 @@ export interface UpdatePropertyBody {
   contactEmail?: string;
   images?: string[];
   featured?: boolean;
+  pickMonth?: number;
+  pickYear?: number;
 }
 
 export interface AdminLoginBody {
@@ -73,5 +81,9 @@ export interface ErrorResponse {
 export type ListPropertiesParams = {
   category?: string;
   search?: string;
-  featured?: string;
+};
+
+export type GetMonthlyPicksParams = {
+  month: number;
+  year: number;
 };

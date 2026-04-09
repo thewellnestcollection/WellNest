@@ -6,7 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type ListPropertiesParams = {
-  category?: string;
-  search?: string;
+export type GetMonthlyPicksParams = {
+  month: number;
+  year: number;
 };

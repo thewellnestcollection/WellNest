@@ -8,7 +8,7 @@ import {
   useDeleteProperty,
   getAdminListPropertiesQueryKey,
   getListPropertiesQueryKey,
-  getGetFeaturedPropertiesQueryKey,
+  getGetMonthlyPicksQueryKey,
   getGetPropertyCategoriesQueryKey
 } from "@workspace/api-client-react";
 import type { Property, CreatePropertyBody, UpdatePropertyBody } from "@workspace/api-client-react";
@@ -19,7 +19,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { 
   Dialog,
@@ -47,15 +46,60 @@ import {
 import { Plus, Edit2, Trash2, ExternalLink, Loader2 } from "lucide-react";
 
 const CATEGORIES = [
-  "Farmhouse stays", 
-  "Wild swimming spots with somewhere to stay", 
-  "Treehouses", 
-  "Shepherd huts / glamping", 
-  "Scottish Highlands stays", 
-  "Coastal retreats", 
-  "Unique spots", 
-  "Hidden Gems"
+  "Farm",
+  "Treehouse",
+  "Cabin/Hut",
+  "Cottage",
+  "Pub with Rooms",
+  "Boat",
+  "Estate/Manor",
 ];
+
+const MONTHS = [
+  { value: 1, label: "January" },
+  { value: 2, label: "February" },
+  { value: 3, label: "March" },
+  { value: 4, label: "April" },
+  { value: 5, label: "May" },
+  { value: 6, label: "June" },
+  { value: 7, label: "July" },
+  { value: 8, label: "August" },
+  { value: 9, label: "September" },
+  { value: 10, label: "October" },
+  { value: 11, label: "November" },
+  { value: 12, label: "December" },
+];
+
+const currentYear = new Date().getFullYear();
+const YEARS = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
+
+interface FormData {
+  name: string;
+  category: string;
+  location: string;
+  nightlyPrice: number;
+  guests: number;
+  facilities: string[];
+  contactEmail: string;
+  images: string[];
+  featured: boolean;
+  pickMonth: number;
+  pickYear: number;
+}
+
+const defaultForm: FormData = {
+  name: "",
+  category: "",
+  location: "",
+  nightlyPrice: 0,
+  guests: 2,
+  facilities: [],
+  contactEmail: "",
+  images: [],
+  featured: false,
+  pickMonth: new Date().getMonth() + 1,
+  pickYear: new Date().getFullYear(),
+};
 
 export function AdminDashboard() {
   const [, setLocation] = useLocation();
@@ -73,24 +117,10 @@ export function AdminDashboard() {
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
-  
-  // Form State
-  const [formData, setFormData] = useState<CreatePropertyBody>({
-    name: "",
-    category: "",
-    location: "",
-    nightlyPrice: 0,
-    guests: 2,
-    facilities: [],
-    contactEmail: "",
-    images: [],
-    featured: false
-  });
-  
+  const [formData, setFormData] = useState<FormData>(defaultForm);
   const [facilitiesText, setFacilitiesText] = useState("");
   const [imagesText, setImagesText] = useState("");
 
-  // Redirect if not authenticated
   if (!sessionLoading && !adminSession?.authenticated) {
     setLocation("/admin");
     return null;
@@ -99,23 +129,13 @@ export function AdminDashboard() {
   const invalidateCaches = () => {
     queryClient.invalidateQueries({ queryKey: getAdminListPropertiesQueryKey() });
     queryClient.invalidateQueries({ queryKey: getListPropertiesQueryKey() });
-    queryClient.invalidateQueries({ queryKey: getGetFeaturedPropertiesQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetMonthlyPicksQueryKey() });
     queryClient.invalidateQueries({ queryKey: getGetPropertyCategoriesQueryKey() });
   };
 
   const handleOpenCreate = () => {
     setEditingId(null);
-    setFormData({
-      name: "",
-      category: "",
-      location: "",
-      nightlyPrice: 0,
-      guests: 2,
-      facilities: [],
-      contactEmail: "",
-      images: [],
-      featured: false
-    });
+    setFormData(defaultForm);
     setFacilitiesText("");
     setImagesText("");
     setIsFormOpen(true);
@@ -132,7 +152,9 @@ export function AdminDashboard() {
       facilities: property.facilities || [],
       contactEmail: property.contactEmail,
       images: property.images || [],
-      featured: property.featured
+      featured: property.featured,
+      pickMonth: property.pickMonth ?? new Date().getMonth() + 1,
+      pickYear: property.pickYear ?? new Date().getFullYear(),
     });
     setFacilitiesText(property.facilities?.join("\n") || "");
     setImagesText(property.images?.join("\n") || "");
@@ -155,12 +177,10 @@ export function AdminDashboard() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Parse textareas back to arrays
-    const parsedData = {
+    const parsedData: CreatePropertyBody = {
       ...formData,
       facilities: facilitiesText.split("\n").map(s => s.trim()).filter(Boolean),
-      images: imagesText.split("\n").map(s => s.trim()).filter(Boolean)
+      images: imagesText.split("\n").map(s => s.trim()).filter(Boolean),
     };
 
     if (editingId) {
@@ -192,38 +212,88 @@ export function AdminDashboard() {
     return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin" /></div>;
   }
 
+  const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
   return (
     <div className="min-h-screen bg-background/50 p-4 md:p-8">
-      <div className="max-w-6xl mx-auto space-y-8">
+      <div className="max-w-7xl mx-auto space-y-8">
         
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
             <h1 className="text-3xl font-serif tracking-wide mb-2">Collection Management</h1>
-            <p className="text-muted-foreground font-light">Manage your properties, pricing, and availability.</p>
+            <p className="text-muted-foreground font-light">
+              Manage monthly property picks across all categories.
+            </p>
           </div>
           
           <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
             <DialogTrigger asChild>
-              <Button onClick={handleOpenCreate} className="rounded-none bg-foreground text-background hover:bg-foreground/90 uppercase text-xs tracking-widest font-medium">
+              <Button
+                onClick={handleOpenCreate}
+                className="rounded-none bg-foreground text-background hover:bg-foreground/90 uppercase text-xs tracking-widest font-medium"
+              >
                 <Plus className="w-4 h-4 mr-2" />
-                Add Property
+                Add Pick
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle className="font-serif text-2xl">{editingId ? "Edit Property" : "Add New Property"}</DialogTitle>
+                <DialogTitle className="font-serif text-2xl">
+                  {editingId ? "Edit Property" : "Add Monthly Pick"}
+                </DialogTitle>
               </DialogHeader>
               
               <form onSubmit={handleSubmit} className="space-y-6 mt-4">
+                {/* Monthly assignment */}
+                <div className="border border-primary/30 bg-primary/5 p-4 space-y-4">
+                  <p className="text-xs uppercase tracking-widest text-primary font-medium">
+                    Monthly Assignment
+                  </p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Month</Label>
+                      <Select
+                        value={String(formData.pickMonth)}
+                        onValueChange={v => setFormData({ ...formData, pickMonth: Number(v) })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select month" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {MONTHS.map(m => (
+                            <SelectItem key={m.value} value={String(m.value)}>{m.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Year</Label>
+                      <Select
+                        value={String(formData.pickYear)}
+                        onValueChange={v => setFormData({ ...formData, pickYear: Number(v) })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select year" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {YEARS.map(y => (
+                            <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label>Property Name</Label>
-                    <Input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+                    <Input required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
                   </div>
                   
                   <div className="space-y-2">
                     <Label>Category</Label>
-                    <Select value={formData.category} onValueChange={v => setFormData({...formData, category: v})}>
+                    <Select value={formData.category} onValueChange={v => setFormData({ ...formData, category: v })}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a category" />
                       </SelectTrigger>
@@ -237,59 +307,40 @@ export function AdminDashboard() {
                   
                   <div className="space-y-2">
                     <Label>Location</Label>
-                    <Input required value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} placeholder="e.g. Cornwall, England" />
+                    <Input required value={formData.location} onChange={e => setFormData({ ...formData, location: e.target.value })} placeholder="e.g. Lake District, Cumbria" />
                   </div>
                   
                   <div className="space-y-2">
                     <Label>Contact Email</Label>
-                    <Input type="email" required value={formData.contactEmail} onChange={e => setFormData({...formData, contactEmail: e.target.value})} />
+                    <Input type="email" required value={formData.contactEmail} onChange={e => setFormData({ ...formData, contactEmail: e.target.value })} />
                   </div>
                   
                   <div className="space-y-2">
                     <Label>Nightly Price (£)</Label>
-                    <Input type="number" required min="0" value={formData.nightlyPrice} onChange={e => setFormData({...formData, nightlyPrice: Number(e.target.value)})} />
+                    <Input type="number" required min="0" value={formData.nightlyPrice} onChange={e => setFormData({ ...formData, nightlyPrice: Number(e.target.value) })} />
                   </div>
                   
                   <div className="space-y-2">
                     <Label>Max Guests</Label>
-                    <Input type="number" required min="1" value={formData.guests} onChange={e => setFormData({...formData, guests: Number(e.target.value)})} />
+                    <Input type="number" required min="1" value={formData.guests} onChange={e => setFormData({ ...formData, guests: Number(e.target.value) })} />
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <Label>Facilities (One per line)</Label>
-                  <Textarea 
-                    rows={4} 
-                    value={facilitiesText} 
-                    onChange={e => setFacilitiesText(e.target.value)} 
-                    placeholder="Hot tub&#10;Wood burner&#10;WiFi"
-                  />
+                  <Textarea rows={4} value={facilitiesText} onChange={e => setFacilitiesText(e.target.value)} placeholder={"Hot tub\nWood burner\nWiFi"} />
                 </div>
 
                 <div className="space-y-2">
                   <Label>Image URLs (One per line, first is main image)</Label>
-                  <Textarea 
-                    rows={4} 
-                    value={imagesText} 
-                    onChange={e => setImagesText(e.target.value)} 
-                    placeholder="https://example.com/image1.jpg&#10;https://example.com/image2.jpg"
-                  />
-                </div>
-
-                <div className="flex items-center space-x-2 border p-4">
-                  <Switch 
-                    id="featured" 
-                    checked={formData.featured} 
-                    onCheckedChange={v => setFormData({...formData, featured: v})} 
-                  />
-                  <Label htmlFor="featured" className="cursor-pointer">Featured Property (Shows on homepage)</Label>
+                  <Textarea rows={4} value={imagesText} onChange={e => setImagesText(e.target.value)} placeholder={"https://example.com/image1.jpg\nhttps://example.com/image2.jpg"} />
                 </div>
 
                 <DialogFooter>
                   <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)} className="rounded-none">Cancel</Button>
                   <Button type="submit" disabled={createProp.isPending || updateProp.isPending} className="rounded-none bg-primary text-primary-foreground hover:bg-primary/90">
                     {(createProp.isPending || updateProp.isPending) && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                    {editingId ? "Save Changes" : "Create Property"}
+                    {editingId ? "Save Changes" : "Create Pick"}
                   </Button>
                 </DialogFooter>
               </form>
@@ -297,14 +348,14 @@ export function AdminDashboard() {
           </Dialog>
         </div>
 
-        <div className="bg-white border shadow-sm">
+        <div className="bg-card border shadow-sm">
           <Table>
             <TableHeader className="bg-muted/50">
               <TableRow>
                 <TableHead className="font-serif">Property</TableHead>
                 <TableHead className="font-serif">Category</TableHead>
+                <TableHead className="font-serif">Month</TableHead>
                 <TableHead className="font-serif text-right">Price</TableHead>
-                <TableHead className="font-serif text-center">Featured</TableHead>
                 <TableHead className="font-serif text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -313,9 +364,9 @@ export function AdminDashboard() {
                 Array(5).fill(0).map((_, i) => (
                   <TableRow key={i}>
                     <TableCell><Skeleton className="h-5 w-48" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-8 mx-auto" /></TableCell>
                     <TableCell><Skeleton className="h-8 w-24 ml-auto" /></TableCell>
                   </TableRow>
                 ))
@@ -330,28 +381,28 @@ export function AdminDashboard() {
                   <TableRow key={property.id}>
                     <TableCell>
                       <div className="font-medium text-foreground">{property.name}</div>
-                      <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                        {property.location}
-                      </div>
+                      <div className="text-xs text-muted-foreground mt-0.5">{property.location}</div>
                     </TableCell>
                     <TableCell>
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground">
+                      <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-muted text-muted-foreground">
                         {property.category}
                       </span>
+                    </TableCell>
+                    <TableCell>
+                      {property.pickMonth && property.pickYear ? (
+                        <span className="text-sm text-foreground">
+                          {MONTH_NAMES[(property.pickMonth ?? 1) - 1]} {property.pickYear}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground italic">Unassigned</span>
+                      )}
                     </TableCell>
                     <TableCell className="text-right font-medium">
                       £{property.nightlyPrice}
                     </TableCell>
-                    <TableCell className="text-center">
-                      {property.featured ? (
-                        <span className="inline-flex w-2 h-2 rounded-full bg-primary" title="Featured" />
-                      ) : (
-                        <span className="inline-flex w-2 h-2 rounded-full bg-border" title="Not featured" />
-                      )}
-                    </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button variant="ghost" size="icon" onClick={() => window.open(`/properties/${property.id}`, '_blank')} title="View Live">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => window.open(`/properties/${property.id}`, '_blank')} title="View">
                           <ExternalLink className="w-4 h-4 text-muted-foreground" />
                         </Button>
                         <Button variant="ghost" size="icon" onClick={() => handleOpenEdit(property)} title="Edit">

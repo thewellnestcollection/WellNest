@@ -46,11 +46,6 @@ paths:
           required: false
           schema:
             type: string
-        - name: featured
-          in: query
-          required: false
-          schema:
-            type: string
       responses:
         "200":
           description: List of properties
@@ -61,15 +56,26 @@ paths:
                 items:
                   $ref: "#/components/schemas/Property"
 
-  /properties/featured:
+  /properties/monthly:
     get:
-      operationId: getFeaturedProperties
+      operationId: getMonthlyPicks
       tags: [properties]
-      summary: Get featured properties
-      description: Returns featured properties for homepage showcase
+      summary: Get monthly picks
+      description: Returns one property per category for a given month and year
+      parameters:
+        - name: month
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: year
+          in: query
+          required: true
+          schema:
+            type: integer
       responses:
         "200":
-          description: List of featured properties
+          description: Monthly property picks (one per category)
           content:
             application/json:
               schema:
@@ -81,11 +87,11 @@ paths:
     get:
       operationId: getPropertyCategories
       tags: [properties]
-      summary: Get category stats
-      description: Returns categories with property counts
+      summary: Get category list
+      description: Returns all available categories
       responses:
         "200":
-          description: Categories with counts
+          description: Categories
           content:
             application/json:
               schema:
@@ -124,7 +130,6 @@ paths:
       operationId: adminLogin
       tags: [admin]
       summary: Admin login
-      description: Authenticate as admin
       requestBody:
         required: true
         content:
@@ -150,7 +155,6 @@ paths:
       operationId: adminLogout
       tags: [admin]
       summary: Admin logout
-      description: Logout admin session
       responses:
         "200":
           description: Logged out
@@ -160,7 +164,6 @@ paths:
       operationId: adminMe
       tags: [admin]
       summary: Get admin session
-      description: Returns current admin session status
       responses:
         "200":
           description: Session info
@@ -180,7 +183,6 @@ paths:
       operationId: adminListProperties
       tags: [admin]
       summary: Admin list all properties
-      description: Returns all properties for admin management
       responses:
         "200":
           description: List of all properties
@@ -194,7 +196,6 @@ paths:
       operationId: createProperty
       tags: [admin]
       summary: Create a property
-      description: Create a new property listing
       requestBody:
         required: true
         content:
@@ -220,7 +221,6 @@ paths:
       operationId: updateProperty
       tags: [admin]
       summary: Update a property
-      description: Update an existing property listing
       parameters:
         - name: id
           in: path
@@ -250,7 +250,6 @@ paths:
       operationId: deleteProperty
       tags: [admin]
       summary: Delete a property
-      description: Delete a property listing
       parameters:
         - name: id
           in: path
@@ -304,6 +303,10 @@ components:
             type: string
         featured:
           type: boolean
+        pickMonth:
+          type: ["integer", "null"]
+        pickYear:
+          type: ["integer", "null"]
         createdAt:
           type: string
         updatedAt:
@@ -319,6 +322,8 @@ components:
         - contactEmail
         - images
         - featured
+        - pickMonth
+        - pickYear
         - createdAt
         - updatedAt
 
@@ -358,6 +363,10 @@ components:
             type: string
         featured:
           type: boolean
+        pickMonth:
+          type: integer
+        pickYear:
+          type: integer
       required:
         - name
         - category
@@ -367,6 +376,8 @@ components:
         - facilities
         - contactEmail
         - images
+        - pickMonth
+        - pickYear
 
     UpdatePropertyBody:
       type: object
@@ -393,6 +404,10 @@ components:
             type: string
         featured:
           type: boolean
+        pickMonth:
+          type: integer
+        pickYear:
+          type: integer
 
     AdminLoginBody:
       type: object

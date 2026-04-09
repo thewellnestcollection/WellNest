@@ -23,6 +23,7 @@ import type {
   CategoryStat,
   CreatePropertyBody,
   ErrorResponse,
+  GetMonthlyPicksParams,
   HealthStatus,
   ListPropertiesParams,
   Property,
@@ -210,73 +211,92 @@ export function useListProperties<
 }
 
 /**
- * Returns featured properties for homepage showcase
- * @summary Get featured properties
+ * Returns one property per category for a given month and year
+ * @summary Get monthly picks
  */
-export const getGetFeaturedPropertiesUrl = () => {
-  return `/api/properties/featured`;
+export const getGetMonthlyPicksUrl = (params: GetMonthlyPicksParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/properties/monthly?${stringifiedParams}`
+    : `/api/properties/monthly`;
 };
 
-export const getFeaturedProperties = async (
+export const getMonthlyPicks = async (
+  params: GetMonthlyPicksParams,
   options?: RequestInit,
 ): Promise<Property[]> => {
-  return customFetch<Property[]>(getGetFeaturedPropertiesUrl(), {
+  return customFetch<Property[]>(getGetMonthlyPicksUrl(params), {
     ...options,
     method: "GET",
   });
 };
 
-export const getGetFeaturedPropertiesQueryKey = () => {
-  return [`/api/properties/featured`] as const;
+export const getGetMonthlyPicksQueryKey = (params?: GetMonthlyPicksParams) => {
+  return [`/api/properties/monthly`, ...(params ? [params] : [])] as const;
 };
 
-export const getGetFeaturedPropertiesQueryOptions = <
-  TData = Awaited<ReturnType<typeof getFeaturedProperties>>,
+export const getGetMonthlyPicksQueryOptions = <
+  TData = Awaited<ReturnType<typeof getMonthlyPicks>>,
   TError = ErrorType<unknown>,
->(options?: {
-  query?: UseQueryOptions<
-    Awaited<ReturnType<typeof getFeaturedProperties>>,
-    TError,
-    TData
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}) => {
+>(
+  params: GetMonthlyPicksParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getMonthlyPicks>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
   const { query: queryOptions, request: requestOptions } = options ?? {};
 
-  const queryKey = queryOptions?.queryKey ?? getGetFeaturedPropertiesQueryKey();
+  const queryKey = queryOptions?.queryKey ?? getGetMonthlyPicksQueryKey(params);
 
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof getFeaturedProperties>>
-  > = ({ signal }) => getFeaturedProperties({ signal, ...requestOptions });
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getMonthlyPicks>>> = ({
+    signal,
+  }) => getMonthlyPicks(params, { signal, ...requestOptions });
 
   return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof getFeaturedProperties>>,
+    Awaited<ReturnType<typeof getMonthlyPicks>>,
     TError,
     TData
   > & { queryKey: QueryKey };
 };
 
-export type GetFeaturedPropertiesQueryResult = NonNullable<
-  Awaited<ReturnType<typeof getFeaturedProperties>>
+export type GetMonthlyPicksQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getMonthlyPicks>>
 >;
-export type GetFeaturedPropertiesQueryError = ErrorType<unknown>;
+export type GetMonthlyPicksQueryError = ErrorType<unknown>;
 
 /**
- * @summary Get featured properties
+ * @summary Get monthly picks
  */
 
-export function useGetFeaturedProperties<
-  TData = Awaited<ReturnType<typeof getFeaturedProperties>>,
+export function useGetMonthlyPicks<
+  TData = Awaited<ReturnType<typeof getMonthlyPicks>>,
   TError = ErrorType<unknown>,
->(options?: {
-  query?: UseQueryOptions<
-    Awaited<ReturnType<typeof getFeaturedProperties>>,
-    TError,
-    TData
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getGetFeaturedPropertiesQueryOptions(options);
+>(
+  params: GetMonthlyPicksParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getMonthlyPicks>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetMonthlyPicksQueryOptions(params, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;
@@ -286,8 +306,8 @@ export function useGetFeaturedProperties<
 }
 
 /**
- * Returns categories with property counts
- * @summary Get category stats
+ * Returns all available categories
+ * @summary Get category list
  */
 export const getGetPropertyCategoriesUrl = () => {
   return `/api/properties/categories`;
@@ -338,7 +358,7 @@ export type GetPropertyCategoriesQueryResult = NonNullable<
 export type GetPropertyCategoriesQueryError = ErrorType<unknown>;
 
 /**
- * @summary Get category stats
+ * @summary Get category list
  */
 
 export function useGetPropertyCategories<
@@ -450,7 +470,6 @@ export function useGetProperty<
 }
 
 /**
- * Authenticate as admin
  * @summary Admin login
  */
 export const getAdminLoginUrl = () => {
@@ -537,7 +556,6 @@ export const useAdminLogin = <
 };
 
 /**
- * Logout admin session
  * @summary Admin logout
  */
 export const getAdminLogoutUrl = () => {
@@ -617,7 +635,6 @@ export const useAdminLogout = <
 };
 
 /**
- * Returns current admin session status
  * @summary Get admin session
  */
 export const getAdminMeUrl = () => {
@@ -683,7 +700,6 @@ export function useAdminMe<
 }
 
 /**
- * Returns all properties for admin management
  * @summary Admin list all properties
  */
 export const getAdminListPropertiesUrl = () => {
@@ -759,7 +775,6 @@ export function useAdminListProperties<
 }
 
 /**
- * Create a new property listing
  * @summary Create a property
  */
 export const getCreatePropertyUrl = () => {
@@ -846,7 +861,6 @@ export const useCreateProperty = <
 };
 
 /**
- * Update an existing property listing
  * @summary Update a property
  */
 export const getUpdatePropertyUrl = (id: number) => {
@@ -934,7 +948,6 @@ export const useUpdateProperty = <
 };
 
 /**
- * Delete a property listing
  * @summary Delete a property
  */
 export const getDeletePropertyUrl = (id: number) => {

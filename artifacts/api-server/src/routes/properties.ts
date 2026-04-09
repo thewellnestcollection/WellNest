@@ -1,13 +1,14 @@
 import { Router, type IRouter } from "express";
-import { eq, ilike, sql } from "drizzle-orm";
+import { eq, ilike, sql, and } from "drizzle-orm";
 import { db, propertiesTable } from "@workspace/db";
 import {
   ListPropertiesQueryParams,
   GetPropertyParams,
   ListPropertiesResponse,
   GetPropertyResponse,
-  GetFeaturedPropertiesResponse,
   GetPropertyCategoriesResponse,
+  GetMonthlyPicksQueryParams,
+  GetMonthlyPicksResponse,
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -27,8 +28,6 @@ router.get("/properties", async (req, res): Promise<void> => {
     dbQuery = dbQuery.where(
       ilike(propertiesTable.name, `%${query.data.search}%`)
     );
-  } else if (query.data.featured === "true") {
-    dbQuery = dbQuery.where(eq(propertiesTable.featured, true));
   }
 
   const properties = await dbQuery.orderBy(propertiesTable.createdAt);
@@ -43,12 +42,26 @@ router.get("/properties", async (req, res): Promise<void> => {
   res.json(ListPropertiesResponse.parse(result));
 });
 
-router.get("/properties/featured", async (_req, res): Promise<void> => {
+router.get("/properties/monthly", async (req, res): Promise<void> => {
+  const query = GetMonthlyPicksQueryParams.safeParse({
+    month: req.query.month ? parseInt(String(req.query.month), 10) : undefined,
+    year: req.query.year ? parseInt(String(req.query.year), 10) : undefined,
+  });
+  if (!query.success) {
+    res.status(400).json({ error: query.error.message });
+    return;
+  }
+
   const properties = await db
     .select()
     .from(propertiesTable)
-    .where(eq(propertiesTable.featured, true))
-    .orderBy(propertiesTable.createdAt);
+    .where(
+      and(
+        eq(propertiesTable.pickMonth, query.data.month),
+        eq(propertiesTable.pickYear, query.data.year)
+      )
+    )
+    .orderBy(propertiesTable.category);
 
   const result = properties.map((p) => ({
     ...p,
@@ -57,7 +70,7 @@ router.get("/properties/featured", async (_req, res): Promise<void> => {
     updatedAt: p.updatedAt.toISOString(),
   }));
 
-  res.json(GetFeaturedPropertiesResponse.parse(result));
+  res.json(GetMonthlyPicksResponse.parse(result));
 });
 
 router.get("/properties/categories", async (_req, res): Promise<void> => {

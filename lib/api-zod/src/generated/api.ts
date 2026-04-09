@@ -22,7 +22,6 @@ export const HealthCheckResponse = zod.object({
 export const ListPropertiesQueryParams = zod.object({
   category: zod.coerce.string().optional(),
   search: zod.coerce.string().optional(),
-  featured: zod.coerce.string().optional(),
 });
 
 export const ListPropertiesResponseItem = zod.object({
@@ -36,16 +35,23 @@ export const ListPropertiesResponseItem = zod.object({
   contactEmail: zod.string(),
   images: zod.array(zod.string()),
   featured: zod.boolean(),
+  pickMonth: zod.number().nullable(),
+  pickYear: zod.number().nullable(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
 export const ListPropertiesResponse = zod.array(ListPropertiesResponseItem);
 
 /**
- * Returns featured properties for homepage showcase
- * @summary Get featured properties
+ * Returns one property per category for a given month and year
+ * @summary Get monthly picks
  */
-export const GetFeaturedPropertiesResponseItem = zod.object({
+export const GetMonthlyPicksQueryParams = zod.object({
+  month: zod.coerce.number(),
+  year: zod.coerce.number(),
+});
+
+export const GetMonthlyPicksResponseItem = zod.object({
   id: zod.number(),
   name: zod.string(),
   category: zod.string(),
@@ -56,16 +62,16 @@ export const GetFeaturedPropertiesResponseItem = zod.object({
   contactEmail: zod.string(),
   images: zod.array(zod.string()),
   featured: zod.boolean(),
+  pickMonth: zod.number().nullable(),
+  pickYear: zod.number().nullable(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
-export const GetFeaturedPropertiesResponse = zod.array(
-  GetFeaturedPropertiesResponseItem,
-);
+export const GetMonthlyPicksResponse = zod.array(GetMonthlyPicksResponseItem);
 
 /**
- * Returns categories with property counts
- * @summary Get category stats
+ * Returns all available categories
+ * @summary Get category list
  */
 export const GetPropertyCategoriesResponseItem = zod.object({
   category: zod.string(),
@@ -94,12 +100,13 @@ export const GetPropertyResponse = zod.object({
   contactEmail: zod.string(),
   images: zod.array(zod.string()),
   featured: zod.boolean(),
+  pickMonth: zod.number().nullable(),
+  pickYear: zod.number().nullable(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
 
 /**
- * Authenticate as admin
  * @summary Admin login
  */
 export const AdminLoginBody = zod.object({
@@ -112,7 +119,6 @@ export const AdminLoginResponse = zod.object({
 });
 
 /**
- * Returns current admin session status
  * @summary Get admin session
  */
 export const AdminMeResponse = zod.object({
@@ -120,7 +126,6 @@ export const AdminMeResponse = zod.object({
 });
 
 /**
- * Returns all properties for admin management
  * @summary Admin list all properties
  */
 export const AdminListPropertiesResponseItem = zod.object({
@@ -134,6 +139,8 @@ export const AdminListPropertiesResponseItem = zod.object({
   contactEmail: zod.string(),
   images: zod.array(zod.string()),
   featured: zod.boolean(),
+  pickMonth: zod.number().nullable(),
+  pickYear: zod.number().nullable(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -142,7 +149,6 @@ export const AdminListPropertiesResponse = zod.array(
 );
 
 /**
- * Create a new property listing
  * @summary Create a property
  */
 export const CreatePropertyBody = zod.object({
@@ -155,10 +161,11 @@ export const CreatePropertyBody = zod.object({
   contactEmail: zod.string(),
   images: zod.array(zod.string()),
   featured: zod.boolean().optional(),
+  pickMonth: zod.number(),
+  pickYear: zod.number(),
 });
 
 /**
- * Update an existing property listing
  * @summary Update a property
  */
 export const UpdatePropertyParams = zod.object({
@@ -175,6 +182,8 @@ export const UpdatePropertyBody = zod.object({
   contactEmail: zod.string().optional(),
   images: zod.array(zod.string()).optional(),
   featured: zod.boolean().optional(),
+  pickMonth: zod.number().optional(),
+  pickYear: zod.number().optional(),
 });
 
 export const UpdatePropertyResponse = zod.object({
@@ -188,12 +197,13 @@ export const UpdatePropertyResponse = zod.object({
   contactEmail: zod.string(),
   images: zod.array(zod.string()),
   featured: zod.boolean(),
+  pickMonth: zod.number().nullable(),
+  pickYear: zod.number().nullable(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
 
 /**
- * Delete a property listing
  * @summary Delete a property
  */
 export const DeletePropertyParams = zod.object({

@@ -17,6 +17,10 @@ export interface Property {
   contactEmail: string;
   images: string[];
   featured: boolean;
+  /** @nullable */
+  pickMonth: number | null;
+  /** @nullable */
+  pickYear: number | null;
   createdAt: string;
   updatedAt: string;
 }
