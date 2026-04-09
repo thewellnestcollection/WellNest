@@ -1,0 +1,126 @@
+Build a super clean, super simple property showcase website for a brand called WellNest.
+
+Goal
+
+Create a minimal, premium-feeling website that showcases a curated collection of UK wellness and unique stays. The design should feel calm, modern, editorial, and high-end. Think soft neutrals, elegant spacing, simple typography, and image-led cards. No clutter.
+
+Brand
+	•	Name: WellNest
+	•	Positioning: a curated collection of unique UK stays
+	•	Style: minimal, luxury, calm, soft, modern
+	•	Feel: premium but simple, similar to a boutique travel brand
+
+Core Website Requirements
+
+Build both:
+	1.	Frontend website
+	2.	Backend/admin panel so I can add/edit/delete properties myself
+
+Frontend Pages
+
+1. Homepage
+	•	Very simple hero section with:
+	•	Logo text: WellNest
+	•	Short line like: “A curated collection of unique stays across the UK”
+	•	Below that, show property categories as clean clickable filters/cards:
+	•	Farmhouse stays
+	•	Wild swimming spots with somewhere to stay
+	•	Treehouses
+	•	Shepherd huts / glamping
+	•	Scottish Highlands stays
+	•	Coastal retreats
+	•	Unique spots
+	•	Hidden Gems
+	•	Then a grid of featured properties
+	•	Keep layout spacious and elegant
+
+2. Collection / All Properties page
+	•	Filterable grid of all properties
+	•	Filters by category
+	•	Optional simple search by property name or location
+	•	Each property card should show only:
+	•	Main image
+	•	Property name
+	•	Location
+	•	Nightly price
+	•	Number of guests
+
+3. Individual Property Page
+
+Each property page should be minimal and image-led, containing only:
+	•	Gallery
+	•	Name
+	•	Location
+	•	Nightly price
+	•	Facilities
+	•	Number of guests
+	•	Contact email
+
+No booking system needed yet.
+
+Backend / Admin Requirements
+
+Create a simple admin dashboard where I can:
+	•	Add a new property
+	•	Edit a property
+	•	Delete a property
+	•	Upload multiple gallery images
+	•	Choose category from predefined categories
+	•	Fill in these fields only:
+	•	Property name
+	•	Category
+	•	Location
+	•	Nightly price
+	•	Number of guests
+	•	Facilities
+	•	Contact email
+	•	Gallery images
+
+Categories
+
+Use only these categories for now:
+	•	Farmhouse stays
+	•	Wild swimming spots with somewhere to stay
+	•	Treehouses
+	•	Shepherd huts / glamping
+	•	Scottish Highlands stays
+	•	Coastal retreats
+	•	Unique spots
+	•	Hidden Gems
+
+Design Requirements
+	•	Make it look polished and premium
+	•	Lots of white space
+	•	Soft beige / off-white backgrounds
+	•	Elegant serif heading font and clean sans-serif body font
+	•	Subtle hover effects
+	•	Rounded corners but not overly playful
+	•	Very simple navigation
+	•	Mobile responsive
+	•	No unnecessary animations or features
+
+Technical Preferences
+	•	Use a simple stack suitable for Replit
+	•	Use a database so properties persist
+	•	Seed the site with a few sample properties for each category
+	•	Make admin login protected with a simple auth system
+	•	Keep code clean and easy for future expansion
+
+Future-Proofing
+
+Structure it so later I can add:
+	•	direct enquiry forms
+	•	map view
+	•	featured collections
+	•	user accounts
+	•	booking links
+
+Final Output
+
+I want a working MVP with:
+	•	clean homepage
+	•	category-based property listings
+	•	individual property pages
+	•	working backend/admin to manage listings
+
+Please prioritise simplicity, elegance, and ease of use over complexity.

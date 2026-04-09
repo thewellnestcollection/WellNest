@@ -1,0 +1,20 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "bX6fyTDXWF8cq-MV48Koo"
+uri = "file://artifacts/wellnest/public/images/hero-bg.png"
+type = "image"
+title = "Misty UK farmhouse aerial"
+
+[[generated]]
+id = "nXzAML5l5X9qx8O_iTDdm"
+uri = "file://artifacts/wellnest/public/images/editorial-img.png"
+type = "image"
+title = "Luxury coastal retreat interior"
+
+[[generated]]
+id = "rjrcEY2OU0CKdk9VDD3s1"
+uri = "file://artifacts/wellnest/public/images/property-placeholder.png"
+type = "image"
+title = "Luxury cabin in woods"

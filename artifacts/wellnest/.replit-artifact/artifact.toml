@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "The WellNest Collection"
+version = "1.0.0"
+id = "artifacts/wellnest"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 19615
+
+[services.development]
+run = "pnpm --filter @workspace/wellnest run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/wellnest", "run", "build" ]
+publicDir = "artifacts/wellnest/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19615"
+BASE_PATH = "/"
