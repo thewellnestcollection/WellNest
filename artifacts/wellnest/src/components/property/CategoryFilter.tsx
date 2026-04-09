@@ -10,8 +10,8 @@ interface CategoryFilterProps {
 
 export function CategoryFilter({ categories, activeCategory, onSelectCategory }: CategoryFilterProps) {
   return (
-    <ScrollArea className="w-full whitespace-nowrap pb-4">
-      <div className="flex w-max space-x-2 p-1">
+    <ScrollArea className="w-full whitespace-nowrap">
+      <div className="flex w-max space-x-2 p-1 items-center">
         <Button
           variant={!activeCategory ? "default" : "outline"}
           className={`rounded-full px-6 font-normal ${!activeCategory ? 'bg-foreground text-background hover:bg-foreground/90' : 'bg-transparent border-border hover:border-primary hover:text-primary'}`}

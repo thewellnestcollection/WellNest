@@ -1,9 +1,14 @@
 import { useParams } from "wouter";
 import { useGetProperty } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MapPin, Users, Mail, Check, ChevronLeft } from "lucide-react";
+import { MapPin, Users, Mail, Check, ChevronLeft, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
+
+const MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"
+];
 
 export function PropertyDetails() {
   const params = useParams<{ id: string }>();
@@ -49,7 +54,7 @@ export function PropertyDetails() {
   return (
     <article className="min-h-screen bg-background pb-24">
       {/* Back Link */}
-      <div className="absolute top-28 left-4 md:left-8 z-10">
+      <div className="absolute top-36 left-4 md:left-8 z-10">
         <Link href="/collection" className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/80 backdrop-blur-sm hover:bg-white text-foreground transition-colors shadow-sm">
           <ChevronLeft className="w-5 h-5" />
         </Link>
@@ -69,8 +74,16 @@ export function PropertyDetails() {
         <div className="bg-white p-8 md:p-12 shadow-xl mb-12">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
             <div className="space-y-4 flex-1">
-              <div className="inline-block px-3 py-1 bg-muted text-muted-foreground text-xs uppercase tracking-widest font-medium">
-                {property.category}
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="inline-block px-3 py-1 bg-muted text-muted-foreground text-xs uppercase tracking-widest font-medium">
+                  {property.category}
+                </div>
+                {property.pickMonth && property.pickYear && (
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-primary/10 text-primary text-xs uppercase tracking-widest font-medium border border-primary/20">
+                    <Calendar className="w-3 h-3" />
+                    {MONTH_NAMES[(property.pickMonth as number) - 1]} {property.pickYear} Pick
+                  </div>
+                )}
               </div>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif leading-tight">{property.name}</h1>
               <div className="flex flex-wrap items-center gap-6 text-muted-foreground font-light pt-2">
@@ -144,7 +157,7 @@ export function PropertyDetails() {
 
           {/* Sidebar / Contact */}
           <div className="space-y-8">
-            <div className="bg-muted/50 p-8 sticky top-32">
+            <div className="bg-muted/50 p-8 sticky top-36">
               <h3 className="text-xl font-serif mb-6">Ready to book?</h3>
               <p className="text-muted-foreground font-light mb-8 text-sm leading-relaxed">
                 Contact the property manager directly to check availability and arrange your stay at {property.name}.

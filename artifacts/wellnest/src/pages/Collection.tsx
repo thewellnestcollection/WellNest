@@ -55,7 +55,7 @@ export function Collection() {
       </div>
 
       {/* Filters & Search */}
-      <div className="sticky top-24 z-40 bg-background/95 backdrop-blur-sm border-b py-4 shadow-sm">
+      <div className="sticky top-32 z-40 bg-background/95 backdrop-blur-sm border-b py-4 shadow-sm">
         <div className="container mx-auto px-4 md:px-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="w-full md:w-auto overflow-hidden">
