@@ -77,18 +77,12 @@ export function Home() {
           <p className="text-lg md:text-xl text-white/80 font-light max-w-xl mx-auto leading-relaxed">
             Follow our monthly curation — one extraordinary retreat per category, chosen for those who value rest and renewal.
           </p>
-          <div className="pt-2 flex flex-col sm:flex-row gap-3 items-center justify-center">
-            <button
-              onClick={scrollToPicks}
-              className="bg-white text-foreground hover:bg-white/90 transition-colors px-8 py-3 text-xs tracking-widest uppercase font-medium"
-            >
-              See This Month's Picks
-            </button>
-            <Link href="/collection">
-              <button className="border border-white/60 text-white hover:bg-white/10 transition-colors px-8 py-3 text-xs tracking-widest uppercase font-medium">
-                Browse The Collection
+          <div className="pt-2 flex items-center justify-center">
+            <a href="mailto:hello@wellnestcollection.co.uk?subject=Newsletter%20Sign%20Up">
+              <button className="bg-white text-foreground hover:bg-white/90 transition-colors px-10 py-3 text-xs tracking-widest uppercase font-medium">
+                Join The WellNest Collection
               </button>
-            </Link>
+            </a>
           </div>
         </div>
       </section>
@@ -209,15 +203,7 @@ export function Home() {
                 Each month we select one standout property in each of our seven categories — from working farms to grand estate manors — so you always know where to go next.
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                <Link href="/collection">
-                  <Button
-                    variant="outline"
-                    className="rounded-none border-foreground text-foreground hover:bg-foreground hover:text-background h-12 px-6 uppercase text-xs tracking-widest font-medium"
-                  >
-                    Browse All Stays
-                  </Button>
-                </Link>
+              <div className="pt-2">
                 <a href="mailto:hello@wellnestcollection.co.uk?subject=Newsletter%20Sign%20Up">
                   <Button
                     className="rounded-none bg-primary text-primary-foreground hover:bg-primary/90 h-12 px-6 uppercase text-xs tracking-widest font-medium"
