@@ -1,7 +1,8 @@
+import { useState, useEffect, useCallback } from "react";
 import { useParams } from "wouter";
 import { useGetProperty } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MapPin, Users, Mail, Check, ChevronLeft, Calendar, Globe, Instagram } from "lucide-react";
+import { MapPin, Users, Mail, Check, ChevronLeft, ChevronRight, Calendar, Globe, Instagram, X, ZoomIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 
@@ -17,6 +18,37 @@ export function PropertyDetails() {
   const { data: property, isLoading, error } = useGetProperty(propertyId, {
     query: { enabled: !!propertyId }
   });
+
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+
+  const allImages: string[] = (property?.images ?? []).filter(Boolean) as string[];
+
+  const openLightbox = (index: number) => {
+    setLightboxIndex(index);
+    setLightboxOpen(true);
+  };
+
+  const closeLightbox = () => setLightboxOpen(false);
+
+  const prev = useCallback(() => {
+    setLightboxIndex((i) => (i === 0 ? allImages.length - 1 : i - 1));
+  }, [allImages.length]);
+
+  const next = useCallback(() => {
+    setLightboxIndex((i) => (i === allImages.length - 1 ? 0 : i + 1));
+  }, [allImages.length]);
+
+  useEffect(() => {
+    if (!lightboxOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeLightbox();
+      if (e.key === "ArrowLeft") prev();
+      if (e.key === "ArrowRight") next();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [lightboxOpen, prev, next]);
 
   if (isLoading) {
     return (
@@ -48,8 +80,8 @@ export function PropertyDetails() {
     );
   }
 
-  const mainImage = property.images?.[0] || "/images/property-placeholder.png";
-  const galleryImages = property.images?.length > 1 ? property.images.slice(1) : [];
+  const mainImage = allImages[0] || "/images/property-placeholder.png";
+  const galleryImages = allImages.length > 1 ? allImages.slice(1) : [];
 
   return (
     <article className="min-h-screen bg-background pb-24">
@@ -60,13 +92,22 @@ export function PropertyDetails() {
         </Link>
       </div>
 
-      {/* Hero Image */}
-      <div className="w-full h-[60vh] md:h-[75vh] relative bg-muted">
-        <img 
-          src={mainImage} 
+      {/* Hero Image — clickable */}
+      <div
+        className="w-full h-[60vh] md:h-[75vh] relative bg-muted cursor-zoom-in group"
+        onClick={() => openLightbox(0)}
+      >
+        <img
+          src={mainImage}
           alt={property.name}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.01]"
         />
+        {allImages.length > 1 && (
+          <div className="absolute bottom-4 right-4 flex items-center gap-1.5 bg-black/50 backdrop-blur-sm text-white text-xs px-3 py-1.5 pointer-events-none">
+            <ZoomIn className="w-3.5 h-3.5" />
+            View all {allImages.length} photos
+          </div>
+        )}
       </div>
 
       <div className="container mx-auto px-4 md:px-6 max-w-5xl -mt-24 relative z-10">
@@ -97,7 +138,7 @@ export function PropertyDetails() {
                 </div>
               </div>
             </div>
-            
+
             <div className="text-left md:text-right shrink-0 border-t md:border-t-0 pt-6 md:pt-0 border-border">
               <div className="text-3xl md:text-4xl font-serif">&pound;{property.nightlyPrice}</div>
               <div className="text-muted-foreground text-sm uppercase tracking-wider mt-1">Per night</div>
@@ -112,8 +153,8 @@ export function PropertyDetails() {
               <h2 className="text-2xl font-serif">About this stay</h2>
               <div className="prose prose-stone max-w-none font-light leading-relaxed text-foreground/80">
                 <p>
-                  Experience the perfect blend of comfort and nature at {property.name}. 
-                  Located in the beautiful surroundings of {property.location}, this {property.category.toLowerCase()} 
+                  Experience the perfect blend of comfort and nature at {property.name}.
+                  Located in the beautiful surroundings of {property.location}, this {property.category.toLowerCase()}
                   offers an unforgettable escape for up to {property.guests} guests.
                 </p>
                 <p>
@@ -142,12 +183,17 @@ export function PropertyDetails() {
                 <h2 className="text-2xl font-serif">Gallery</h2>
                 <div className="grid sm:grid-cols-2 gap-4">
                   {galleryImages.map((img, idx) => (
-                    <div key={idx} className="aspect-[4/3] bg-muted relative overflow-hidden">
-                      <img 
-                        src={img} 
-                        alt={`${property.name} - View ${idx + 1}`}
-                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-700 ease-out"
+                    <div
+                      key={idx}
+                      className="aspect-[4/3] bg-muted relative overflow-hidden cursor-zoom-in group"
+                      onClick={() => openLightbox(idx + 1)}
+                    >
+                      <img
+                        src={img}
+                        alt={`${property.name} - View ${idx + 2}`}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                       />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
                     </div>
                   ))}
                 </div>
@@ -155,20 +201,20 @@ export function PropertyDetails() {
             )}
           </div>
 
-          {/* Sidebar / Contact */}
+          {/* Sidebar */}
           <div className="space-y-8">
             <div className="bg-muted/50 p-8 sticky top-44">
               <h3 className="text-xl font-serif mb-6">Ready to book?</h3>
               <p className="text-muted-foreground font-light mb-8 text-sm leading-relaxed">
                 Contact the property manager directly to check availability and arrange your stay at {property.name}.
               </p>
-              <Button 
-                className="w-full h-12 rounded-none bg-foreground text-background hover:bg-foreground/90 font-medium tracking-wide uppercase text-sm"
-                onClick={() => window.location.href = `mailto:${property.contactEmail}?subject=Enquiry regarding ${property.name}`}
+              <a
+                href={`mailto:${property.contactEmail}?subject=Enquiry regarding ${encodeURIComponent(property.name)}`}
+                className="flex items-center justify-center gap-2 w-full h-12 bg-foreground text-background hover:bg-foreground/90 font-medium tracking-wide uppercase text-sm transition-colors"
               >
-                <Mail className="w-4 h-4 mr-2" />
+                <Mail className="w-4 h-4" />
                 Contact Host
-              </Button>
+              </a>
               <div className="mt-6 text-center text-xs text-muted-foreground/80">
                 Responds usually within 24 hours
               </div>
@@ -203,6 +249,77 @@ export function PropertyDetails() {
           </div>
         </div>
       </div>
+
+      {/* Lightbox */}
+      {lightboxOpen && allImages.length > 0 && (
+        <div
+          className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center"
+          onClick={closeLightbox}
+        >
+          {/* Close */}
+          <button
+            className="absolute top-4 right-4 text-white/70 hover:text-white transition-colors p-2 z-10"
+            onClick={closeLightbox}
+          >
+            <X className="w-7 h-7" />
+          </button>
+
+          {/* Counter */}
+          <div className="absolute top-5 left-1/2 -translate-x-1/2 text-white/60 text-sm tracking-widest">
+            {lightboxIndex + 1} / {allImages.length}
+          </div>
+
+          {/* Prev */}
+          {allImages.length > 1 && (
+            <button
+              className="absolute left-4 text-white/70 hover:text-white transition-colors p-3 z-10"
+              onClick={(e) => { e.stopPropagation(); prev(); }}
+            >
+              <ChevronLeft className="w-8 h-8" />
+            </button>
+          )}
+
+          {/* Image */}
+          <div
+            className="max-w-[90vw] max-h-[90vh] relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              key={lightboxIndex}
+              src={allImages[lightboxIndex]}
+              alt={`${property.name} photo ${lightboxIndex + 1}`}
+              className="max-w-full max-h-[90vh] object-contain"
+            />
+          </div>
+
+          {/* Next */}
+          {allImages.length > 1 && (
+            <button
+              className="absolute right-4 text-white/70 hover:text-white transition-colors p-3 z-10"
+              onClick={(e) => { e.stopPropagation(); next(); }}
+            >
+              <ChevronRight className="w-8 h-8" />
+            </button>
+          )}
+
+          {/* Thumbnail strip */}
+          {allImages.length > 1 && (
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
+              {allImages.map((img, i) => (
+                <button
+                  key={i}
+                  onClick={(e) => { e.stopPropagation(); setLightboxIndex(i); }}
+                  className={`w-14 h-10 overflow-hidden border-2 transition-all ${
+                    i === lightboxIndex ? "border-white opacity-100" : "border-transparent opacity-50 hover:opacity-80"
+                  }`}
+                >
+                  <img src={img} alt="" className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </article>
   );
 }
