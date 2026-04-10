@@ -86,7 +86,7 @@ export function PropertyDetails() {
   return (
     <article className="min-h-screen bg-background pb-24">
       {/* Back Link */}
-      <div className="absolute top-44 left-4 md:left-8 z-10">
+      <div className="fixed top-44 left-4 md:left-8 z-20">
         <Link href="/collection" className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/80 backdrop-blur-sm hover:bg-white text-foreground transition-colors shadow-sm">
           <ChevronLeft className="w-5 h-5" />
         </Link>
