@@ -154,8 +154,7 @@ export function PropertyDetails() {
               <div className="prose prose-stone max-w-none font-light leading-relaxed text-foreground/80">
                 <p>
                   Experience the perfect blend of comfort and nature at {property.name}.
-                  Located in the beautiful surroundings of {property.location}, this {property.category.toLowerCase()}
-                  offers an unforgettable escape for up to {property.guests} guests.
+                  Located in the beautiful surroundings of {property.location}, this {property.category.toLowerCase()} offers an unforgettable escape for up to {property.guests} guests.
                 </p>
                 <p>
                   Every detail has been carefully considered to ensure a restful stay. Whether you're looking for a peaceful retreat or a base to explore the local area, this property provides the ideal setting for your next getaway.
@@ -210,6 +209,8 @@ export function PropertyDetails() {
               </p>
               <a
                 href={`mailto:${property.contactEmail}?subject=Enquiry regarding ${encodeURIComponent(property.name)}`}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="flex items-center justify-center gap-2 w-full h-12 bg-foreground text-background hover:bg-foreground/90 font-medium tracking-wide uppercase text-sm transition-colors"
               >
                 <Mail className="w-4 h-4" />
@@ -219,7 +220,7 @@ export function PropertyDetails() {
                 Responds usually within 24 hours
               </div>
 
-              {(property.websiteUrl || property.instagramHandle) && (
+              {(property.websiteUrl || property.instagramHandle || property.contactEmail) && (
                 <div className="mt-6 pt-6 border-t border-border space-y-3">
                   {property.websiteUrl && (
                     <a
@@ -241,6 +242,17 @@ export function PropertyDetails() {
                     >
                       <Instagram className="w-4 h-4 shrink-0 group-hover:text-primary transition-colors" />
                       <span className="truncate">{property.instagramHandle.startsWith("@") ? property.instagramHandle : `@${property.instagramHandle}`}</span>
+                    </a>
+                  )}
+                  {property.contactEmail && (
+                    <a
+                      href={`mailto:${property.contactEmail}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 text-sm text-muted-foreground hover:text-foreground transition-colors group"
+                    >
+                      <Mail className="w-4 h-4 shrink-0 group-hover:text-primary transition-colors" />
+                      <span className="truncate">{property.contactEmail}</span>
                     </a>
                   )}
                 </div>
