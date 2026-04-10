@@ -116,14 +116,20 @@ export function PropertyDetails() {
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
             <div className="space-y-4 flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <div className="inline-block px-3 py-1 bg-muted text-muted-foreground text-xs uppercase tracking-widest font-medium">
+                <Link
+                  href={`/collection?category=${encodeURIComponent(property.category)}`}
+                  className="inline-block px-3 py-1 bg-muted text-muted-foreground text-xs uppercase tracking-widest font-medium hover:bg-muted/70 hover:text-foreground transition-colors"
+                >
                   {property.category}
-                </div>
+                </Link>
                 {property.pickMonth && property.pickYear && (
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-primary/10 text-primary text-xs uppercase tracking-widest font-medium border border-primary/20">
+                  <Link
+                    href={`/?year=${property.pickYear}&month=${property.pickMonth}`}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 bg-primary/10 text-primary text-xs uppercase tracking-widest font-medium border border-primary/20 hover:bg-primary/20 transition-colors"
+                  >
                     <Calendar className="w-3 h-3" />
                     {MONTH_NAMES[(property.pickMonth as number) - 1]} {property.pickYear} Pick
-                  </div>
+                  </Link>
                 )}
               </div>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif leading-tight">{property.name}</h1>

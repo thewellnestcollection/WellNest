@@ -31,9 +31,22 @@ const AVAILABLE_YEARS = Array.from(
 
 export function Home() {
   const picksRef = useRef<HTMLElement>(null);
-  const [selectedYear, setSelectedYear] = useState(CURRENT_YEAR);
-  const [selectedMonth, setSelectedMonth] = useState(CURRENT_MONTH);
+
+  // Read year/month from URL params (e.g. /?year=2026&month=3)
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlYear = urlParams.get("year") ? parseInt(urlParams.get("year")!, 10) : null;
+  const urlMonth = urlParams.get("month") ? parseInt(urlParams.get("month")!, 10) : null;
+
+  const [selectedYear, setSelectedYear] = useState(urlYear ?? CURRENT_YEAR);
+  const [selectedMonth, setSelectedMonth] = useState(urlMonth ?? CURRENT_MONTH);
   const [newsletterOpen, setNewsletterOpen] = useState(false);
+
+  // Scroll to picks section when URL params are provided
+  useEffect(() => {
+    if ((urlYear || urlMonth) && picksRef.current) {
+      setTimeout(() => picksRef.current?.scrollIntoView({ behavior: "smooth" }), 300);
+    }
+  }, []);
 
   const { data: availableData } = useGetAvailableMonths(
     { year: selectedYear },
