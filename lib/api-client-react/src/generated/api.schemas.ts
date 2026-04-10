@@ -69,6 +69,11 @@ export interface UpdatePropertyBody {
   pickYear?: number;
 }
 
+export interface AvailableMonthsResponse {
+  year: number;
+  months: number[];
+}
+
 export interface NewsletterSubscriber {
   id: number;
   firstName: string;
@@ -112,5 +117,9 @@ export type ListPropertiesParams = {
 
 export type GetMonthlyPicksParams = {
   month: number;
+  year: number;
+};
+
+export type GetAvailableMonthsParams = {
   year: number;
 };

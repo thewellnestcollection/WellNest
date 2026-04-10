@@ -20,9 +20,11 @@ import type {
   AdminLoginBody,
   AdminLoginResponse,
   AdminSession,
+  AvailableMonthsResponse,
   CategoryStat,
   CreatePropertyBody,
   ErrorResponse,
+  GetAvailableMonthsParams,
   GetMonthlyPicksParams,
   HealthStatus,
   ListPropertiesParams,
@@ -300,6 +302,109 @@ export function useGetMonthlyPicks<
   },
 ): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getGetMonthlyPicksQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get months with picks for a given year
+ */
+export const getGetAvailableMonthsUrl = (params: GetAvailableMonthsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/properties/available-months?${stringifiedParams}`
+    : `/api/properties/available-months`;
+};
+
+export const getAvailableMonths = async (
+  params: GetAvailableMonthsParams,
+  options?: RequestInit,
+): Promise<AvailableMonthsResponse> => {
+  return customFetch<AvailableMonthsResponse>(
+    getGetAvailableMonthsUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetAvailableMonthsQueryKey = (
+  params?: GetAvailableMonthsParams,
+) => {
+  return [
+    `/api/properties/available-months`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getGetAvailableMonthsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getAvailableMonths>>,
+  TError = ErrorType<unknown>,
+>(
+  params: GetAvailableMonthsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getAvailableMonths>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetAvailableMonthsQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getAvailableMonths>>
+  > = ({ signal }) => getAvailableMonths(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getAvailableMonths>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetAvailableMonthsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getAvailableMonths>>
+>;
+export type GetAvailableMonthsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get months with picks for a given year
+ */
+
+export function useGetAvailableMonths<
+  TData = Awaited<ReturnType<typeof getAvailableMonths>>,
+  TError = ErrorType<unknown>,
+>(
+  params: GetAvailableMonthsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getAvailableMonths>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetAvailableMonthsQueryOptions(params, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

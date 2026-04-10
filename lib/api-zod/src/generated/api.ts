@@ -74,6 +74,18 @@ export const GetMonthlyPicksResponseItem = zod.object({
 export const GetMonthlyPicksResponse = zod.array(GetMonthlyPicksResponseItem);
 
 /**
+ * @summary Get months with picks for a given year
+ */
+export const GetAvailableMonthsQueryParams = zod.object({
+  year: zod.coerce.number(),
+});
+
+export const GetAvailableMonthsResponse = zod.object({
+  year: zod.number(),
+  months: zod.array(zod.number()),
+});
+
+/**
  * Returns all available categories
  * @summary Get category list
  */

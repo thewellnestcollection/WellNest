@@ -83,6 +83,25 @@ paths:
                 items:
                   $ref: "#/components/schemas/Property"
 
+  /properties/available-months:
+    get:
+      operationId: getAvailableMonths
+      tags: [properties]
+      summary: Get months with picks for a given year
+      parameters:
+        - name: year
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Available months
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AvailableMonthsResponse"
+
   /properties/categories:
     get:
       operationId: getPropertyCategories
@@ -472,6 +491,19 @@ components:
           type: integer
         pickYear:
           type: integer
+
+    AvailableMonthsResponse:
+      type: object
+      properties:
+        year:
+          type: integer
+        months:
+          type: array
+          items:
+            type: integer
+      required:
+        - year
+        - months
 
     NewsletterSubscriber:
       type: object

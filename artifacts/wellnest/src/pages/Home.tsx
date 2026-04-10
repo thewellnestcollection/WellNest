@@ -1,5 +1,5 @@
-import { useState, useRef } from "react";
-import { useGetMonthlyPicks } from "@workspace/api-client-react";
+import { useState, useRef, useEffect } from "react";
+import { useGetMonthlyPicks, useGetAvailableMonths } from "@workspace/api-client-react";
 import { PropertyCard } from "@/components/property/PropertyCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "wouter";
@@ -29,23 +29,32 @@ const AVAILABLE_YEARS = Array.from(
   (_, i) => CURRENT_YEAR - i
 );
 
-function getMonthsForYear(year: number): number[] {
-  const maxMonth = year === CURRENT_YEAR ? CURRENT_MONTH : 12;
-  return Array.from({ length: maxMonth }, (_, i) => maxMonth - i);
-}
-
 export function Home() {
   const picksRef = useRef<HTMLElement>(null);
   const [selectedYear, setSelectedYear] = useState(CURRENT_YEAR);
   const [selectedMonth, setSelectedMonth] = useState(CURRENT_MONTH);
   const [newsletterOpen, setNewsletterOpen] = useState(false);
 
-  const months = getMonthsForYear(selectedYear);
+  const { data: availableData } = useGetAvailableMonths(
+    { year: selectedYear },
+    { query: { staleTime: 60_000 } }
+  );
+
+  // Months that have at least one pick, sorted descending (most recent first)
+  const months: number[] = availableData?.months
+    ? [...availableData.months].sort((a, b) => b - a)
+    : [];
+
+  // When the available months change (e.g. year switch), default to most recent
+  useEffect(() => {
+    if (months.length > 0 && !months.includes(selectedMonth)) {
+      setSelectedMonth(months[0]);
+    }
+  }, [months.join(",")]);
 
   const handleYearChange = (year: number) => {
     setSelectedYear(year);
-    const newMonths = getMonthsForYear(year);
-    setSelectedMonth(newMonths[0]);
+    // selectedMonth will be corrected by the useEffect above once new months load
   };
 
   const { data: monthlyPicks, isLoading } = useGetMonthlyPicks(

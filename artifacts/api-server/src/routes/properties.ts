@@ -73,6 +73,26 @@ router.get("/properties/monthly", async (req, res): Promise<void> => {
   res.json(GetMonthlyPicksResponse.parse(result));
 });
 
+router.get("/properties/available-months", async (req, res): Promise<void> => {
+  const year = req.query.year ? parseInt(String(req.query.year), 10) : undefined;
+  if (!year || isNaN(year)) {
+    res.status(400).json({ error: "year is required" });
+    return;
+  }
+
+  const rows = await db
+    .selectDistinct({ month: propertiesTable.pickMonth })
+    .from(propertiesTable)
+    .where(eq(propertiesTable.pickYear, year))
+    .orderBy(propertiesTable.pickMonth);
+
+  const months = rows
+    .map((r) => r.month)
+    .filter((m): m is number => m !== null);
+
+  res.json({ year, months });
+});
+
 router.get("/properties/categories", async (_req, res): Promise<void> => {
   const stats = await db
     .select({
