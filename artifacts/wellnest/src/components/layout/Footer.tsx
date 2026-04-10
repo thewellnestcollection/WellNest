@@ -25,7 +25,7 @@ export function Footer() {
     <footer className="border-t bg-white py-16 mt-24">
       <div className="container mx-auto px-4 md:px-6 flex flex-col items-center justify-center space-y-8">
         <Link href="/" className="transition-opacity hover:opacity-80">
-          <img src={logoUrl} alt="The WellNest Collection" className="h-20 w-auto opacity-60 grayscale" />
+          <img src={logoUrl} alt="The WellNest Collection" className="h-32 w-auto opacity-90" />
         </Link>
         <p className="text-center text-sm text-muted-foreground max-w-md font-serif italic">
           A curated collection of unique stays across the UK. Discover spaces that restore and inspire.
