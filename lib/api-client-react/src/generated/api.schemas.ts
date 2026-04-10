@@ -69,6 +69,14 @@ export interface UpdatePropertyBody {
   pickYear?: number;
 }
 
+export interface NewsletterSubscriber {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  createdAt: string;
+}
+
 export interface NewsletterSubscribeBody {
   firstName: string;
   lastName: string;

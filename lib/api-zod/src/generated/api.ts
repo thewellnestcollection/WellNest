@@ -113,6 +113,20 @@ export const GetPropertyResponse = zod.object({
 });
 
 /**
+ * @summary List newsletter subscribers
+ */
+export const AdminListNewsletterSubscribersResponseItem = zod.object({
+  id: zod.number(),
+  firstName: zod.string(),
+  lastName: zod.string(),
+  email: zod.string(),
+  createdAt: zod.string(),
+});
+export const AdminListNewsletterSubscribersResponse = zod.array(
+  AdminListNewsletterSubscribersResponseItem,
+);
+
+/**
  * @summary Subscribe to newsletter
  */
 export const SubscribeNewsletterBody = zod.object({

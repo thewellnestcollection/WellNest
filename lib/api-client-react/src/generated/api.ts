@@ -28,6 +28,7 @@ import type {
   ListPropertiesParams,
   NewsletterSubscribeBody,
   NewsletterSubscribeResponse,
+  NewsletterSubscriber,
   Property,
   UpdatePropertyBody,
 } from "./api.schemas";
@@ -463,6 +464,86 @@ export function useGetProperty<
   },
 ): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getGetPropertyQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List newsletter subscribers
+ */
+export const getAdminListNewsletterSubscribersUrl = () => {
+  return `/api/admin/newsletter-subscribers`;
+};
+
+export const adminListNewsletterSubscribers = async (
+  options?: RequestInit,
+): Promise<NewsletterSubscriber[]> => {
+  return customFetch<NewsletterSubscriber[]>(
+    getAdminListNewsletterSubscribersUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getAdminListNewsletterSubscribersQueryKey = () => {
+  return [`/api/admin/newsletter-subscribers`] as const;
+};
+
+export const getAdminListNewsletterSubscribersQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminListNewsletterSubscribers>>,
+  TError = ErrorType<ErrorResponse>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof adminListNewsletterSubscribers>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getAdminListNewsletterSubscribersQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminListNewsletterSubscribers>>
+  > = ({ signal }) =>
+    adminListNewsletterSubscribers({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof adminListNewsletterSubscribers>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AdminListNewsletterSubscribersQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminListNewsletterSubscribers>>
+>;
+export type AdminListNewsletterSubscribersQueryError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary List newsletter subscribers
+ */
+
+export function useAdminListNewsletterSubscribers<
+  TData = Awaited<ReturnType<typeof adminListNewsletterSubscribers>>,
+  TError = ErrorType<ErrorResponse>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof adminListNewsletterSubscribers>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAdminListNewsletterSubscribersQueryOptions(options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

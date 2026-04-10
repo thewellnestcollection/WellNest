@@ -125,6 +125,27 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /admin/newsletter-subscribers:
+    get:
+      operationId: adminListNewsletterSubscribers
+      tags: [admin]
+      summary: List newsletter subscribers
+      responses:
+        "200":
+          description: List of newsletter subscribers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NewsletterSubscriber"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /newsletter/subscribe:
     post:
       operationId: subscribeNewsletter
@@ -451,6 +472,26 @@ components:
           type: integer
         pickYear:
           type: integer
+
+    NewsletterSubscriber:
+      type: object
+      properties:
+        id:
+          type: integer
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - firstName
+        - lastName
+        - email
+        - createdAt
 
     NewsletterSubscribeBody:
       type: object

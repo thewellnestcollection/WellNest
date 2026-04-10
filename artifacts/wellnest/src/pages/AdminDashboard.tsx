@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { 
   useAdminMe, 
   useAdminListProperties, 
+  useAdminListNewsletterSubscribers,
   useCreateProperty, 
   useUpdateProperty, 
   useDeleteProperty,
@@ -43,7 +44,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Edit2, Trash2, ExternalLink, Loader2 } from "lucide-react";
+import { Plus, Edit2, Trash2, ExternalLink, Loader2, Mail } from "lucide-react";
 
 const CATEGORIES = [
   "Pick of the Month",
@@ -119,11 +120,16 @@ export function AdminDashboard() {
   const updateProp = useUpdateProperty();
   const deleteProp = useDeleteProperty();
 
+  const [activeTab, setActiveTab] = useState<"collection" | "newsletter">("collection");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [formData, setFormData] = useState<FormData>(defaultForm);
   const [facilitiesText, setFacilitiesText] = useState("");
   const [imagesText, setImagesText] = useState("");
+
+  const { data: subscribers, isLoading: subscribersLoading } = useAdminListNewsletterSubscribers({
+    query: { enabled: !!adminSession?.authenticated && activeTab === "newsletter" }
+  });
 
   if (!sessionLoading && !adminSession?.authenticated) {
     setLocation("/admin");
@@ -224,10 +230,50 @@ export function AdminDashboard() {
     <div className="min-h-screen bg-background/50 p-4 md:p-8">
       <div className="max-w-7xl mx-auto space-y-8">
         
+        {/* Header */}
+        <div>
+          <h1 className="text-3xl font-serif tracking-wide mb-2">Admin Dashboard</h1>
+          <p className="text-muted-foreground font-light">
+            Manage your collection and newsletter subscribers.
+          </p>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex gap-0 border-b border-border">
+          <button
+            onClick={() => setActiveTab("collection")}
+            className={`px-6 py-3 text-sm font-medium tracking-wide border-b-2 transition-colors -mb-px ${
+              activeTab === "collection"
+                ? "border-foreground text-foreground"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Collection
+          </button>
+          <button
+            onClick={() => setActiveTab("newsletter")}
+            className={`px-6 py-3 text-sm font-medium tracking-wide border-b-2 transition-colors -mb-px flex items-center gap-2 ${
+              activeTab === "newsletter"
+                ? "border-foreground text-foreground"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Mail className="w-3.5 h-3.5" />
+            Newsletter Signups
+            {subscribers && subscribers.length > 0 && (
+              <span className="bg-primary text-primary-foreground text-[10px] font-semibold px-1.5 py-0.5 rounded-full">
+                {subscribers.length}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {/* Collection tab */}
+        {activeTab === "collection" && (
+        <>
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-serif tracking-wide mb-2">Collection Management</h1>
-            <p className="text-muted-foreground font-light">
+            <p className="text-muted-foreground font-light text-sm">
               Manage monthly property picks across all categories.
             </p>
           </div>
@@ -435,6 +481,65 @@ export function AdminDashboard() {
             </TableBody>
           </Table>
         </div>
+        </>) } {/* end collection tab */}
+
+        {/* Newsletter tab */}
+        {activeTab === "newsletter" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground font-light">
+                {subscribers?.length ?? 0} subscriber{(subscribers?.length ?? 0) !== 1 ? "s" : ""} signed up
+              </p>
+            </div>
+            <div className="bg-card border shadow-sm">
+              <Table>
+                <TableHeader className="bg-muted/50">
+                  <TableRow>
+                    <TableHead className="font-serif">Name</TableHead>
+                    <TableHead className="font-serif">Email</TableHead>
+                    <TableHead className="font-serif">Signed Up</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {subscribersLoading ? (
+                    Array(5).fill(0).map((_, i) => (
+                      <TableRow key={i}>
+                        <TableCell><Skeleton className="h-5 w-40" /></TableCell>
+                        <TableCell><Skeleton className="h-5 w-48" /></TableCell>
+                        <TableCell><Skeleton className="h-5 w-28" /></TableCell>
+                      </TableRow>
+                    ))
+                  ) : subscribers?.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={3} className="h-32 text-center text-muted-foreground font-light">
+                        No newsletter signups yet.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    subscribers?.map((sub) => (
+                      <TableRow key={sub.id}>
+                        <TableCell className="font-medium">
+                          {sub.firstName} {sub.lastName}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          <a href={`mailto:${sub.email}`} className="hover:text-foreground transition-colors">
+                            {sub.email}
+                          </a>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-sm">
+                          {new Date(sub.createdAt).toLocaleDateString("en-GB", {
+                            day: "numeric", month: "short", year: "numeric"
+                          })}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        )} {/* end newsletter tab */}
+
       </div>
     </div>
   );

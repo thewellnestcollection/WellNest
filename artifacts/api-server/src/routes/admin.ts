@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
-import { db, propertiesTable } from "@workspace/db";
+import { eq, desc } from "drizzle-orm";
+import { db, propertiesTable, newsletterSubscribersTable } from "@workspace/db";
 import {
   AdminLoginBody,
   AdminLoginResponse,
@@ -182,6 +182,15 @@ router.delete("/admin/properties/:id", async (req, res): Promise<void> => {
   }
 
   res.sendStatus(204);
+});
+
+router.get("/admin/newsletter-subscribers", async (req, res): Promise<void> => {
+  if (!requireAdmin(req, res)) return;
+  const subscribers = await db
+    .select()
+    .from(newsletterSubscribersTable)
+    .orderBy(desc(newsletterSubscribersTable.createdAt));
+  res.json(subscribers);
 });
 
 export default router;

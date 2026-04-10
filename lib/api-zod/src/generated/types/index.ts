@@ -16,6 +16,7 @@ export * from "./getMonthlyPicksParams";
 export * from "./healthStatus";
 export * from "./listPropertiesParams";
 export * from "./newsletterSubscribeBody";
+export * from "./newsletterSubscriber";
 export * from "./newsletterSubscribeResponse";
 export * from "./property";
 export * from "./updatePropertyBody";
