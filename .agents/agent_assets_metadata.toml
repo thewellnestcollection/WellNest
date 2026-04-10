@@ -1,5 +1,4 @@
 uploads = []
-outputs = []
 
 [[generated]]
 id = "bX6fyTDXWF8cq-MV48Koo"
@@ -18,3 +17,189 @@ id = "rjrcEY2OU0CKdk9VDD3s1"
 uri = "file://artifacts/wellnest/public/images/property-placeholder.png"
 type = "image"
 title = "Luxury cabin in woods"
+
+[[outputs]]
+id = "spIzjvCCgma0AFV4nR8dy"
+uri = "file://attached_assets/stock_images/cottage_1_1.jpg"
+type = "image"
+title = "charming British stone cottage with garden, countryside"
+
+[[outputs]]
+id = "IRye2vxf28S2pV9NLRWLa"
+uri = "file://attached_assets/stock_images/cottage_1_2.jpg"
+type = "image"
+title = "charming British stone cottage with garden, countryside"
+
+[[outputs]]
+id = "wG2i-4jeYWGpQvAVHPh0l"
+uri = "file://attached_assets/stock_images/cottage_1_3.jpg"
+type = "image"
+title = "charming British stone cottage with garden, countryside"
+
+[[outputs]]
+id = "lQ1KdgM_BaLI8h0ddOfb3"
+uri = "file://attached_assets/stock_images/cottage_1_4.jpg"
+type = "image"
+title = "charming British stone cottage with garden, countryside"
+
+[[outputs]]
+id = "4k2V40aeG6zzCP-JuYz1C"
+uri = "file://attached_assets/stock_images/cottage_1_5.jpg"
+type = "image"
+title = "charming British stone cottage with garden, countryside"
+
+[[outputs]]
+id = "8EiAZVRFy8DOaGzpKfR0O"
+uri = "file://attached_assets/stock_images/pub_1_1.jpg"
+type = "image"
+title = "British country pub inn rooms historic charming"
+
+[[outputs]]
+id = "XAVcYMuoSDm6Ij_Fhrx56"
+uri = "file://attached_assets/stock_images/pub_1_2.jpg"
+type = "image"
+title = "British country pub inn rooms historic charming"
+
+[[outputs]]
+id = "PSMpckeLL1l7X-rxJVVBv"
+uri = "file://attached_assets/stock_images/cabin_1_2.jpg"
+type = "image"
+title = "cozy wooden cabin hut in forest mountains UK countryside"
+
+[[outputs]]
+id = "LyZ1ZwsBMcahLgEwiEymx"
+uri = "file://attached_assets/stock_images/pub_1_4.jpg"
+type = "image"
+title = "British country pub inn rooms historic charming"
+
+[[outputs]]
+id = "_jPNTUR8a58lJD2MCg3Rg"
+uri = "file://attached_assets/stock_images/cabin_1_4.jpg"
+type = "image"
+title = "cozy wooden cabin hut in forest mountains UK countryside"
+
+[[outputs]]
+id = "ojULBryJuEIUODoaeqoWb"
+uri = "file://attached_assets/stock_images/cabin_1_5.jpg"
+type = "image"
+title = "cozy wooden cabin hut in forest mountains UK countryside"
+
+[[outputs]]
+id = "DwKCtu-tgLLocizgGnliv"
+uri = "file://attached_assets/stock_images/farmstay_1_1.jpg"
+type = "image"
+title = "UK farmhouse rural farm stay holiday, barn, pastoral fields"
+
+[[outputs]]
+id = "1j5TUPecL_lrGRI_p57RC"
+uri = "file://attached_assets/stock_images/farmstay_1_2.jpg"
+type = "image"
+title = "UK farmhouse rural farm stay holiday, barn, pastoral fields"
+
+[[outputs]]
+id = "L6k4onv9fq_GfrdcjLD0q"
+uri = "file://attached_assets/stock_images/farmstay_1_3.jpg"
+type = "image"
+title = "UK farmhouse rural farm stay holiday, barn, pastoral fields"
+
+[[outputs]]
+id = "SLimaRCQ_mOq5ZpkylMiA"
+uri = "file://attached_assets/stock_images/farmstay_1_4.jpg"
+type = "image"
+title = "UK farmhouse rural farm stay holiday, barn, pastoral fields"
+
+[[outputs]]
+id = "hTGMlgMMl9ZSMFh4nhaTw"
+uri = "file://attached_assets/stock_images/farmstay_1_5.jpg"
+type = "image"
+title = "UK farmhouse rural farm stay holiday, barn, pastoral fields"
+
+[[outputs]]
+id = "WtIgr2aT9woHh5TMDQtVB"
+uri = "file://attached_assets/stock_images/estate_1_1.jpg"
+type = "image"
+title = "grand English manor estate country house stately home"
+
+[[outputs]]
+id = "2_UkSkcHu5NZpGDfc2UEo"
+uri = "file://attached_assets/stock_images/estate_1_2.jpg"
+type = "image"
+title = "grand English manor estate country house stately home"
+
+[[outputs]]
+id = "etDzj3SDm2llGDKLnC9dg"
+uri = "file://attached_assets/stock_images/estate_1_3.jpg"
+type = "image"
+title = "grand English manor estate country house stately home"
+
+[[outputs]]
+id = "5CwnRLIJ5SeOCibnYln1a"
+uri = "file://attached_assets/stock_images/estate_1_4.jpg"
+type = "image"
+title = "grand English manor estate country house stately home"
+
+[[outputs]]
+id = "U3jU_gLyR4YtplcKouHsr"
+uri = "file://attached_assets/stock_images/unique_1_1.jpg"
+type = "image"
+title = "unique unusual holiday home treehouse converted barn windmill"
+
+[[outputs]]
+id = "TYac1Kv11K0sEtCnc2ndD"
+uri = "file://attached_assets/stock_images/estate_1_5.jpg"
+type = "image"
+title = "grand English manor estate country house stately home"
+
+[[outputs]]
+id = "iLhUddYQanWCsLjuxC_10"
+uri = "file://attached_assets/stock_images/unique_1_2.jpg"
+type = "image"
+title = "unique unusual holiday home treehouse converted barn windmill"
+
+[[outputs]]
+id = "3ayczYDvGacs67EdomLpM"
+uri = "file://attached_assets/stock_images/unique_1_3.jpg"
+type = "image"
+title = "unique unusual holiday home treehouse converted barn windmill"
+
+[[outputs]]
+id = "YabsEtaDSHdj7IFwPCERU"
+uri = "file://attached_assets/stock_images/unique_1_4.jpg"
+type = "image"
+title = "unique unusual holiday home treehouse converted barn windmill"
+
+[[outputs]]
+id = "YPJQYmXFGU3kP9NeDXlYk"
+uri = "file://attached_assets/stock_images/unique_1_5.jpg"
+type = "image"
+title = "unique unusual holiday home treehouse converted barn windmill"
+
+[[outputs]]
+id = "rPPfsOR7vn7rrKwMls7ab"
+uri = "file://attached_assets/stock_images/pick_1_1.jpg"
+type = "image"
+title = "luxury holiday property swimming pool beautiful garden UK"
+
+[[outputs]]
+id = "seiJfgo0rOVq1CabwQt2n"
+uri = "file://attached_assets/stock_images/pick_1_2.jpg"
+type = "image"
+title = "luxury holiday property swimming pool beautiful garden UK"
+
+[[outputs]]
+id = "WvqIjW-yhcayGK1Z_Q5QI"
+uri = "file://attached_assets/stock_images/pick_1_3.jpg"
+type = "image"
+title = "luxury holiday property swimming pool beautiful garden UK"
+
+[[outputs]]
+id = "loCGAkdgr7qwiqHkpAYrq"
+uri = "file://attached_assets/stock_images/pick_1_4.jpg"
+type = "image"
+title = "luxury holiday property swimming pool beautiful garden UK"
+
+[[outputs]]
+id = "Lr2V76sKw9Acv3dpKw2Ya"
+uri = "file://attached_assets/stock_images/pick_1_5.jpg"
+type = "image"
+title = "luxury holiday property swimming pool beautiful garden UK"
