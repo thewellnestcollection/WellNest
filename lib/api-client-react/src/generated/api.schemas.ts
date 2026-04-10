@@ -69,6 +69,17 @@ export interface UpdatePropertyBody {
   pickYear?: number;
 }
 
+export interface NewsletterSubscribeBody {
+  firstName: string;
+  lastName: string;
+  email: string;
+}
+
+export interface NewsletterSubscribeResponse {
+  success: boolean;
+  message: string;
+}
+
 export interface AdminLoginBody {
   password: string;
 }

@@ -26,6 +26,8 @@ import type {
   GetMonthlyPicksParams,
   HealthStatus,
   ListPropertiesParams,
+  NewsletterSubscribeBody,
+  NewsletterSubscribeResponse,
   Property,
   UpdatePropertyBody,
 } from "./api.schemas";
@@ -468,6 +470,92 @@ export function useGetProperty<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary Subscribe to newsletter
+ */
+export const getSubscribeNewsletterUrl = () => {
+  return `/api/newsletter/subscribe`;
+};
+
+export const subscribeNewsletter = async (
+  newsletterSubscribeBody: NewsletterSubscribeBody,
+  options?: RequestInit,
+): Promise<NewsletterSubscribeResponse> => {
+  return customFetch<NewsletterSubscribeResponse>(getSubscribeNewsletterUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(newsletterSubscribeBody),
+  });
+};
+
+export const getSubscribeNewsletterMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof subscribeNewsletter>>,
+    TError,
+    { data: BodyType<NewsletterSubscribeBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof subscribeNewsletter>>,
+  TError,
+  { data: BodyType<NewsletterSubscribeBody> },
+  TContext
+> => {
+  const mutationKey = ["subscribeNewsletter"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof subscribeNewsletter>>,
+    { data: BodyType<NewsletterSubscribeBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return subscribeNewsletter(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SubscribeNewsletterMutationResult = NonNullable<
+  Awaited<ReturnType<typeof subscribeNewsletter>>
+>;
+export type SubscribeNewsletterMutationBody = BodyType<NewsletterSubscribeBody>;
+export type SubscribeNewsletterMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Subscribe to newsletter
+ */
+export const useSubscribeNewsletter = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof subscribeNewsletter>>,
+    TError,
+    { data: BodyType<NewsletterSubscribeBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof subscribeNewsletter>>,
+  TError,
+  { data: BodyType<NewsletterSubscribeBody> },
+  TContext
+> => {
+  return useMutation(getSubscribeNewsletterMutationOptions(options));
+};
 
 /**
  * @summary Admin login

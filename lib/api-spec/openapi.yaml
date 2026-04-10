@@ -125,6 +125,37 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /newsletter/subscribe:
+    post:
+      operationId: subscribeNewsletter
+      tags: [newsletter]
+      summary: Subscribe to newsletter
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewsletterSubscribeBody"
+      responses:
+        "200":
+          description: Subscribed successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NewsletterSubscribeResponse"
+        "409":
+          description: Already subscribed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /admin/login:
     post:
       operationId: adminLogin
@@ -420,6 +451,31 @@ components:
           type: integer
         pickYear:
           type: integer
+
+    NewsletterSubscribeBody:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+      required:
+        - firstName
+        - lastName
+        - email
+
+    NewsletterSubscribeResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+      required:
+        - success
+        - message
 
     AdminLoginBody:
       type: object

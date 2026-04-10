@@ -24,3 +24,15 @@ export const propertiesTable = pgTable("properties", {
 export const insertPropertySchema = createInsertSchema(propertiesTable).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertProperty = z.infer<typeof insertPropertySchema>;
 export type Property = typeof propertiesTable.$inferSelect;
+
+export const newsletterSubscribersTable = pgTable("newsletter_subscribers", {
+  id: serial("id").primaryKey(),
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
+  email: text("email").notNull().unique(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertSubscriberSchema = createInsertSchema(newsletterSubscribersTable).omit({ id: true, createdAt: true });
+export type InsertSubscriber = z.infer<typeof insertSubscriberSchema>;
+export type NewsletterSubscriber = typeof newsletterSubscribersTable.$inferSelect;

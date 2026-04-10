@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { NewsletterModal } from "@/components/NewsletterModal";
 
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
@@ -37,6 +38,7 @@ export function Home() {
   const picksRef = useRef<HTMLElement>(null);
   const [selectedYear, setSelectedYear] = useState(CURRENT_YEAR);
   const [selectedMonth, setSelectedMonth] = useState(CURRENT_MONTH);
+  const [newsletterOpen, setNewsletterOpen] = useState(false);
 
   const months = getMonthsForYear(selectedYear);
 
@@ -77,12 +79,16 @@ export function Home() {
           <p className="text-lg md:text-xl text-white/80 font-light max-w-xl mx-auto leading-relaxed">
             Follow our monthly curation — one extraordinary retreat per category, chosen for those who value rest and renewal.
           </p>
-          <div className="pt-2 flex items-center justify-center">
-            <a href="mailto:hello@wellnestcollection.co.uk?subject=Newsletter%20Sign%20Up">
-              <button className="bg-white text-foreground hover:bg-white/90 transition-colors px-10 py-3 text-xs tracking-widest uppercase font-medium">
-                Join The WellNest Collection
-              </button>
-            </a>
+          <div className="pt-2 flex flex-col items-center gap-2">
+            <button
+              onClick={() => setNewsletterOpen(true)}
+              className="bg-white text-foreground hover:bg-white/90 transition-colors px-10 py-3 text-xs tracking-widest uppercase font-medium"
+            >
+              Join The WellNest Collection
+            </button>
+            <p className="text-white/65 text-xs font-light tracking-wide">
+              Subscribe to our free monthly newsletter
+            </p>
           </div>
         </div>
       </section>
@@ -203,19 +209,23 @@ export function Home() {
                 Each month we select one standout property in each of our seven categories — from working farms to grand estate manors — so you always know where to go next.
               </p>
 
-              <div className="pt-2">
-                <a href="mailto:hello@wellnestcollection.co.uk?subject=Newsletter%20Sign%20Up">
-                  <Button
-                    className="rounded-none bg-primary text-primary-foreground hover:bg-primary/90 h-12 px-6 uppercase text-xs tracking-widest font-medium"
-                  >
-                    Join The WellNest Collection
-                  </Button>
-                </a>
+              <div className="pt-2 space-y-2">
+                <Button
+                  onClick={() => setNewsletterOpen(true)}
+                  className="rounded-none bg-primary text-primary-foreground hover:bg-primary/90 h-12 px-6 uppercase text-xs tracking-widest font-medium"
+                >
+                  Join The WellNest Collection
+                </Button>
+                <p className="text-xs text-muted-foreground font-light">
+                  Subscribe to our free monthly newsletter
+                </p>
               </div>
             </div>
           </div>
         </div>
       </section>
+
+      <NewsletterModal open={newsletterOpen} onOpenChange={setNewsletterOpen} />
     </main>
   );
 }
