@@ -81,6 +81,8 @@ interface FormData {
   guests: number;
   facilities: string[];
   contactEmail: string;
+  websiteUrl: string;
+  instagramHandle: string;
   images: string[];
   featured: boolean;
   pickMonth: number;
@@ -95,6 +97,8 @@ const defaultForm: FormData = {
   guests: 2,
   facilities: [],
   contactEmail: "",
+  websiteUrl: "",
+  instagramHandle: "",
   images: [],
   featured: false,
   pickMonth: new Date().getMonth() + 1,
@@ -151,6 +155,8 @@ export function AdminDashboard() {
       guests: property.guests,
       facilities: property.facilities || [],
       contactEmail: property.contactEmail,
+      websiteUrl: property.websiteUrl || "",
+      instagramHandle: property.instagramHandle || "",
       images: property.images || [],
       featured: property.featured,
       pickMonth: property.pickMonth ?? new Date().getMonth() + 1,
@@ -313,6 +319,16 @@ export function AdminDashboard() {
                   <div className="space-y-2">
                     <Label>Contact Email</Label>
                     <Input type="email" required value={formData.contactEmail} onChange={e => setFormData({ ...formData, contactEmail: e.target.value })} />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Website URL</Label>
+                    <Input type="url" value={formData.websiteUrl} onChange={e => setFormData({ ...formData, websiteUrl: e.target.value })} placeholder="https://example.com" />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Instagram Handle</Label>
+                    <Input value={formData.instagramHandle} onChange={e => setFormData({ ...formData, instagramHandle: e.target.value })} placeholder="@propertyhandle" />
                   </div>
                   
                   <div className="space-y-2">

@@ -14,6 +14,8 @@ export interface UpdatePropertyBody {
   guests?: number;
   facilities?: string[];
   contactEmail?: string;
+  websiteUrl?: string;
+  instagramHandle?: string;
   images?: string[];
   featured?: boolean;
   pickMonth?: number;

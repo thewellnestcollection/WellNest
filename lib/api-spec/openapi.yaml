@@ -297,6 +297,10 @@ components:
             type: string
         contactEmail:
           type: string
+        websiteUrl:
+          type: ["string", "null"]
+        instagramHandle:
+          type: ["string", "null"]
         images:
           type: array
           items:
@@ -357,6 +361,10 @@ components:
             type: string
         contactEmail:
           type: string
+        websiteUrl:
+          type: string
+        instagramHandle:
+          type: string
         images:
           type: array
           items:
@@ -397,6 +405,10 @@ components:
           items:
             type: string
         contactEmail:
+          type: string
+        websiteUrl:
+          type: string
+        instagramHandle:
           type: string
         images:
           type: array

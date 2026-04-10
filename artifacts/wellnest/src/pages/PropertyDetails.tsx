@@ -1,7 +1,7 @@
 import { useParams } from "wouter";
 import { useGetProperty } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MapPin, Users, Mail, Check, ChevronLeft, Calendar } from "lucide-react";
+import { MapPin, Users, Mail, Check, ChevronLeft, Calendar, Globe, Instagram } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 
@@ -172,6 +172,33 @@ export function PropertyDetails() {
               <div className="mt-6 text-center text-xs text-muted-foreground/80">
                 Responds usually within 24 hours
               </div>
+
+              {(property.websiteUrl || property.instagramHandle) && (
+                <div className="mt-6 pt-6 border-t border-border space-y-3">
+                  {property.websiteUrl && (
+                    <a
+                      href={property.websiteUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 text-sm text-muted-foreground hover:text-foreground transition-colors group"
+                    >
+                      <Globe className="w-4 h-4 shrink-0 group-hover:text-primary transition-colors" />
+                      <span className="truncate">Visit Website</span>
+                    </a>
+                  )}
+                  {property.instagramHandle && (
+                    <a
+                      href={`https://www.instagram.com/${property.instagramHandle.replace(/^@/, "")}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 text-sm text-muted-foreground hover:text-foreground transition-colors group"
+                    >
+                      <Instagram className="w-4 h-4 shrink-0 group-hover:text-primary transition-colors" />
+                      <span className="truncate">{property.instagramHandle.startsWith("@") ? property.instagramHandle : `@${property.instagramHandle}`}</span>
+                    </a>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>

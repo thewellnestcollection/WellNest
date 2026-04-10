@@ -18,6 +18,10 @@ export interface Property {
   guests: number;
   facilities: string[];
   contactEmail: string;
+  /** @nullable */
+  websiteUrl?: string | null;
+  /** @nullable */
+  instagramHandle?: string | null;
   images: string[];
   featured: boolean;
   /** @nullable */
@@ -41,6 +45,8 @@ export interface CreatePropertyBody {
   guests: number;
   facilities: string[];
   contactEmail: string;
+  websiteUrl?: string;
+  instagramHandle?: string;
   images: string[];
   featured?: boolean;
   pickMonth: number;
@@ -55,6 +61,8 @@ export interface UpdatePropertyBody {
   guests?: number;
   facilities?: string[];
   contactEmail?: string;
+  websiteUrl?: string;
+  instagramHandle?: string;
   images?: string[];
   featured?: boolean;
   pickMonth?: number;

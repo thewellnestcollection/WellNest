@@ -15,6 +15,10 @@ export interface Property {
   guests: number;
   facilities: string[];
   contactEmail: string;
+  /** @nullable */
+  websiteUrl?: string | null;
+  /** @nullable */
+  instagramHandle?: string | null;
   images: string[];
   featured: boolean;
   /** @nullable */

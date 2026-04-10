@@ -11,6 +11,8 @@ export const propertiesTable = pgTable("properties", {
   guests: integer("guests").notNull(),
   facilities: jsonb("facilities").$type<string[]>().notNull().default([]),
   contactEmail: text("contact_email").notNull(),
+  websiteUrl: text("website_url"),
+  instagramHandle: text("instagram_handle"),
   images: jsonb("images").$type<string[]>().notNull().default([]),
   featured: boolean("featured").notNull().default(false),
   pickMonth: integer("pick_month"),
