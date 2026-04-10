@@ -54,7 +54,7 @@ export function PropertyDetails() {
   return (
     <article className="min-h-screen bg-background pb-24">
       {/* Back Link */}
-      <div className="absolute top-36 left-4 md:left-8 z-10">
+      <div className="absolute top-44 left-4 md:left-8 z-10">
         <Link href="/collection" className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/80 backdrop-blur-sm hover:bg-white text-foreground transition-colors shadow-sm">
           <ChevronLeft className="w-5 h-5" />
         </Link>
@@ -157,7 +157,7 @@ export function PropertyDetails() {
 
           {/* Sidebar / Contact */}
           <div className="space-y-8">
-            <div className="bg-muted/50 p-8 sticky top-36">
+            <div className="bg-muted/50 p-8 sticky top-44">
               <h3 className="text-xl font-serif mb-6">Ready to book?</h3>
               <p className="text-muted-foreground font-light mb-8 text-sm leading-relaxed">
                 Contact the property manager directly to check availability and arrange your stay at {property.name}.

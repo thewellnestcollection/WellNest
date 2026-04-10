@@ -21,9 +21,9 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container mx-auto px-4 md:px-6 h-32 flex items-center justify-between">
+      <div className="container mx-auto px-4 md:px-6 h-40 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2 transition-opacity hover:opacity-80">
-          <img src={logoUrl} alt="The WellNest Collection" className="h-28 w-auto object-contain" />
+          <img src={logoUrl} alt="The WellNest Collection" className="h-36 w-auto object-contain" />
         </Link>
         <nav className="hidden md:flex items-center gap-8 text-sm font-medium tracking-wide">
           <Link href="/" className={`transition-colors hover:text-primary ${location === '/' ? 'text-foreground' : 'text-muted-foreground'}`}>
