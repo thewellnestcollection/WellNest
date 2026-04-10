@@ -1,6 +1,6 @@
 import { Property } from "@workspace/api-client-react/src/generated/api.schemas";
 import { Link } from "wouter";
-import { MapPin, Users } from "lucide-react";
+import { MapPin, Users, Star } from "lucide-react";
 
 const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -12,6 +12,7 @@ interface PropertyCardProps {
 
 export function PropertyCard({ property, showCategory, showMonthBadge }: PropertyCardProps) {
   const mainImage = property.images?.[0] || "/images/property-placeholder.png";
+  const isPick = property.category === "Pick of the Month";
 
   const monthBadgeText =
     showMonthBadge && property.pickMonth && property.pickYear
@@ -27,6 +28,14 @@ export function PropertyCard({ property, showCategory, showMonthBadge }: Propert
           className="object-cover w-full h-full transition-transform duration-700 ease-out group-hover:scale-105"
         />
         <div className="absolute inset-0 bg-black/10 transition-opacity duration-300 group-hover:opacity-0" />
+
+        {isPick && (
+          <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-amber-900/90 backdrop-blur-sm px-2.5 py-1.5 text-[9px] font-semibold tracking-[0.18em] uppercase text-amber-100">
+            <Star className="w-2.5 h-2.5 fill-amber-300 text-amber-300" />
+            Pick of the Month
+          </div>
+        )}
+
         {monthBadgeText && (
           <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2.5 py-1 text-[10px] font-medium tracking-widest uppercase text-foreground">
             {monthBadgeText}
@@ -34,9 +43,14 @@ export function PropertyCard({ property, showCategory, showMonthBadge }: Propert
         )}
       </div>
       <div className="space-y-1.5">
-        {showCategory && (
+        {showCategory && !isPick && (
           <p className="text-[10px] uppercase tracking-[0.2em] text-primary font-medium">
             {property.category}
+          </p>
+        )}
+        {showCategory && isPick && (
+          <p className="text-[10px] uppercase tracking-[0.2em] text-amber-700 font-semibold">
+            Pick of the Month
           </p>
         )}
         <div className="flex items-start justify-between gap-4">
