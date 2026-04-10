@@ -46,12 +46,12 @@ import {
 import { Plus, Edit2, Trash2, ExternalLink, Loader2 } from "lucide-react";
 
 const CATEGORIES = [
-  "Farm",
-  "Treehouse",
-  "Cabin/Hut",
+  "Pick of the Month",
+  "Farmstay",
+  "Unique Stay",
+  "Cabin/hut",
   "Cottage",
   "Pub with Rooms",
-  "Boat",
   "Estate/Manor",
 ];
 
