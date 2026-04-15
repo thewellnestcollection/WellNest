@@ -108,7 +108,7 @@ export function Home() {
             >
               Join The WellNest Collection
             </button>
-            <p className="text-white/65 text-xs font-light tracking-wide">
+            <p className="text-white/65 text-xs font-bold tracking-wide">
               Subscribe to our free monthly newsletter
             </p>
           </div>
@@ -240,7 +240,7 @@ export function Home() {
                 >
                   Join The WellNest Collection
                 </Button>
-                <p className="text-xs text-muted-foreground font-light">
+                <p className="text-xs text-muted-foreground font-bold">
                   Subscribe to our free monthly newsletter
                 </p>
               </div>

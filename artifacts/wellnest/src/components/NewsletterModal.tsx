@@ -64,7 +64,7 @@ export function NewsletterModal({ open, onOpenChange }: NewsletterModalProps) {
             Join The WellNest Collection
           </DialogTitle>
           <DialogDescription className="text-muted-foreground font-light">
-            Subscribe to our free monthly newsletter and be the first to discover our handpicked wellness stays.
+            <strong>Subscribe to our free monthly newsletter</strong> and be the first to discover our handpicked wellness stays.
           </DialogDescription>
         </DialogHeader>
 

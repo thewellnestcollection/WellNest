@@ -85,7 +85,7 @@ export function Collection() {
         <div className="container mx-auto px-4 md:px-6 max-w-5xl text-center space-y-4">
           <h1 className="text-4xl md:text-5xl font-serif">The Collection</h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto font-light">
-            Browse our complete portfolio of distinctive stays. Use the filters below to find exactly what you're looking for.
+            Monthly handpicked wellness stays across the UK
           </p>
         </div>
       </div>
