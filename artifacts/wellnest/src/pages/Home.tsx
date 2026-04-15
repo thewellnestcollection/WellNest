@@ -22,7 +22,7 @@ const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Se
 const NOW = new Date();
 const CURRENT_YEAR = NOW.getFullYear();
 const CURRENT_MONTH = NOW.getMonth() + 1;
-const LAUNCH_YEAR = 2024;
+const LAUNCH_YEAR = 2025;
 
 const AVAILABLE_YEARS = Array.from(
   { length: CURRENT_YEAR - LAUNCH_YEAR + 1 },
