@@ -1,4 +1,5 @@
-import { Switch, Route, Router as WouterRouter } from "wouter";
+import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
+import { useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -11,6 +12,14 @@ import { Collection } from "@/pages/Collection";
 import { PropertyDetails } from "@/pages/PropertyDetails";
 import { AdminLogin } from "@/pages/AdminLogin";
 import { AdminDashboard } from "@/pages/AdminDashboard";
+
+function ScrollToTop() {
+  const [location] = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location]);
+  return null;
+}
 
 const queryClient = new QueryClient();
 
@@ -27,6 +36,8 @@ function LayoutWrapper({ children, hideHeaderFooter = false }: { children: React
 
 function Router() {
   return (
+    <>
+    <ScrollToTop />
     <Switch>
       <Route path="/">
         <LayoutWrapper><Home /></LayoutWrapper>
@@ -47,6 +58,7 @@ function Router() {
         <LayoutWrapper><NotFound /></LayoutWrapper>
       </Route>
     </Switch>
+    </>
   );
 }
 
