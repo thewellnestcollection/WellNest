@@ -102,37 +102,15 @@ export function Collection() {
               />
             </div>
             
-            <div className="flex items-center gap-3 shrink-0">
-              {/* Sort by — only visible when "All Stays" is active */}
-              {!category && (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground uppercase tracking-widest whitespace-nowrap hidden sm:block">Sort by</span>
-                  <Select value={sortOption} onValueChange={(v) => setSortOption(v as SortOption)}>
-                    <SelectTrigger className="w-44 rounded-none border-muted-foreground/20 bg-white text-sm h-10">
-                      <SelectValue placeholder="Default" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-none">
-                      <SelectItem value="default">Default</SelectItem>
-                      <SelectItem value="category-asc">Category (A–Z)</SelectItem>
-                      <SelectItem value="month-desc">Month (Newest first)</SelectItem>
-                      <SelectItem value="month-asc">Month (Oldest first)</SelectItem>
-                      <SelectItem value="price-asc">Price (Low to high)</SelectItem>
-                      <SelectItem value="price-desc">Price (High to low)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              <div className="relative w-full md:w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="text"
-                  placeholder="Search by name or location..."
-                  className="pl-9 bg-white border-muted-foreground/20 rounded-none focus-visible:ring-primary"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
+            <div className="relative w-full md:w-72 shrink-0">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Search by name or location..."
+                className="pl-9 bg-white border-muted-foreground/20 rounded-none focus-visible:ring-primary"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
             </div>
           </div>
         </div>
@@ -162,8 +140,28 @@ export function Collection() {
           </div>
         ) : (
           <div>
-            <div className="mb-8 text-sm text-muted-foreground uppercase tracking-wider font-medium">
-              Showing {sortedProperties.length} {sortedProperties.length === 1 ? 'property' : 'properties'}
+            <div className="mb-8 flex items-center justify-between gap-4">
+              <span className="text-sm text-muted-foreground uppercase tracking-wider font-medium">
+                Showing {sortedProperties.length} {sortedProperties.length === 1 ? 'property' : 'properties'}
+              </span>
+              {!category && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground uppercase tracking-widest whitespace-nowrap hidden sm:block">Sort by</span>
+                  <Select value={sortOption} onValueChange={(v) => setSortOption(v as SortOption)}>
+                    <SelectTrigger className="w-48 rounded-none border-muted-foreground/20 bg-white text-sm h-9">
+                      <SelectValue placeholder="Default" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-none">
+                      <SelectItem value="default">Default</SelectItem>
+                      <SelectItem value="category-asc">Category (A–Z)</SelectItem>
+                      <SelectItem value="month-desc">Month (Newest first)</SelectItem>
+                      <SelectItem value="month-asc">Month (Oldest first)</SelectItem>
+                      <SelectItem value="price-asc">Price (Low to high)</SelectItem>
+                      <SelectItem value="price-desc">Price (High to low)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-16">
               {sortedProperties.map((property) => (
