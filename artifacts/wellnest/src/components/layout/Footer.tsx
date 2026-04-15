@@ -40,7 +40,7 @@ export function Footer() {
           aria-label="Follow us on Instagram"
         >
           <InstagramIcon className="w-5 h-5" />
-          <span className="text-sm tracking-wide">@wellnest.collection</span>
+          <span className="text-sm tracking-wide">@thewellnestcollection</span>
         </a>
 
         <div className="flex items-center space-x-6 text-sm text-muted-foreground">
