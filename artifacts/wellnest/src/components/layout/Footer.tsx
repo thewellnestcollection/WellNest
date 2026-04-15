@@ -33,7 +33,7 @@ export function Footer() {
 
         {/* Instagram */}
         <a
-          href="https://www.instagram.com/wellnest.collection"
+          href="https://www.instagram.com/thewellnestcollection"
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors group"
