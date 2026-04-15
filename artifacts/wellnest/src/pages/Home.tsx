@@ -192,9 +192,11 @@ export function Home() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-8 gap-y-12">
-            {monthlyPicks.map((property) => (
-              <PropertyCard key={property.id} property={property} showCategory />
-            ))}
+            {[...monthlyPicks]
+              .sort((a, b) => (a.category === "Pick of the Month" ? -1 : b.category === "Pick of the Month" ? 1 : 0))
+              .map((property) => (
+                <PropertyCard key={property.id} property={property} showCategory />
+              ))}
           </div>
         )}
       </section>
