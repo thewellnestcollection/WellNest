@@ -96,7 +96,7 @@ export function Home() {
             The WellNest Collection
           </p>
           <h1 className="text-5xl md:text-[4.5rem] font-serif text-white leading-[1.1] drop-shadow-md">
-            Handpicked wellness stays across the UK
+            Monthly handpicked wellness stays across the UK
           </h1>
           <p className="text-lg md:text-xl text-white/80 font-light max-w-xl mx-auto leading-relaxed">
             Follow our monthly curation — one extraordinary retreat per category, chosen for those who value rest and renewal.
