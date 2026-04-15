@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useLocation } from "wouter";
 import { 
   useAdminMe, 
@@ -44,7 +44,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Edit2, Trash2, ExternalLink, Loader2, Mail } from "lucide-react";
+import { Plus, Edit2, Trash2, ExternalLink, Loader2, Mail, Download, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 
 const CATEGORIES = [
   "Pick of the Month",
@@ -71,8 +71,13 @@ const MONTHS = [
   { value: 12, label: "December" },
 ];
 
+const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
 const currentYear = new Date().getFullYear();
 const YEARS = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
+
+type SortField = "category" | "month" | "price" | null;
+type SortDir = "asc" | "desc";
 
 interface FormData {
   name: string;
@@ -85,6 +90,7 @@ interface FormData {
   websiteUrl: string;
   instagramHandle: string;
   images: string[];
+  description: string;
   featured: boolean;
   pickMonth: number;
   pickYear: number;
@@ -101,10 +107,26 @@ const defaultForm: FormData = {
   websiteUrl: "",
   instagramHandle: "",
   images: [],
+  description: "",
   featured: false,
   pickMonth: new Date().getMonth() + 1,
   pickYear: new Date().getFullYear(),
 };
+
+function downloadCSV(filename: string, headers: string[], rows: string[][]) {
+  const escape = (v: string) => `"${v.replace(/"/g, '""')}"`;
+  const csvContent = [
+    headers.map(escape).join(","),
+    ...rows.map(row => row.map(escape).join(","))
+  ].join("\n");
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 export function AdminDashboard() {
   const [, setLocation] = useLocation();
@@ -127,12 +149,37 @@ export function AdminDashboard() {
   const [facilitiesText, setFacilitiesText] = useState("");
   const [imagesText, setImagesText] = useState("");
 
+  const [sortField, setSortField] = useState<SortField>(null);
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
+
   const { data: subscribers, isLoading: subscribersLoading } = useAdminListNewsletterSubscribers({
     query: { enabled: !!adminSession?.authenticated && activeTab === "newsletter" }
   });
 
+  const sortedProperties = useMemo(() => {
+    if (!properties || !sortField) return properties ?? [];
+    return [...properties].sort((a, b) => {
+      let cmp = 0;
+      if (sortField === "category") {
+        cmp = a.category.localeCompare(b.category);
+      } else if (sortField === "month") {
+        const aVal = (a.pickYear ?? 0) * 12 + (a.pickMonth ?? 0);
+        const bVal = (b.pickYear ?? 0) * 12 + (b.pickMonth ?? 0);
+        cmp = aVal - bVal;
+      } else if (sortField === "price") {
+        cmp = Number(a.nightlyPrice) - Number(b.nightlyPrice);
+      }
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+  }, [properties, sortField, sortDir]);
+
+  useEffect(() => {
+    if (!sessionLoading && !adminSession?.authenticated) {
+      setLocation("/admin");
+    }
+  }, [sessionLoading, adminSession?.authenticated]);
+
   if (!sessionLoading && !adminSession?.authenticated) {
-    setLocation("/admin");
     return null;
   }
 
@@ -141,6 +188,22 @@ export function AdminDashboard() {
     queryClient.invalidateQueries({ queryKey: getListPropertiesQueryKey() });
     queryClient.invalidateQueries({ queryKey: getGetMonthlyPicksQueryKey() });
     queryClient.invalidateQueries({ queryKey: getGetPropertyCategoriesQueryKey() });
+  };
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDir(d => d === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDir("asc");
+    }
+  };
+
+  const sortIcon = (field: SortField) => {
+    if (sortField !== field) return <ArrowUpDown className="w-3.5 h-3.5 ml-1 opacity-40" />;
+    return sortDir === "asc"
+      ? <ArrowUp className="w-3.5 h-3.5 ml-1 text-primary" />
+      : <ArrowDown className="w-3.5 h-3.5 ml-1 text-primary" />;
   };
 
   const handleOpenCreate = () => {
@@ -164,6 +227,7 @@ export function AdminDashboard() {
       websiteUrl: property.websiteUrl || "",
       instagramHandle: property.instagramHandle || "",
       images: property.images || [],
+      description: property.description || "",
       featured: property.featured,
       pickMonth: property.pickMonth ?? new Date().getMonth() + 1,
       pickYear: property.pickYear ?? new Date().getFullYear(),
@@ -220,11 +284,44 @@ export function AdminDashboard() {
     }
   };
 
+  const handleDownloadCollectionCSV = () => {
+    if (!properties) return;
+    downloadCSV("wellnest-collection.csv",
+      ["Name", "Category", "Location", "Month", "Year", "Price (£/night)", "Guests", "Contact Email", "Website"],
+      sortedProperties.map(p => [
+        p.name,
+        p.category,
+        p.location,
+        p.pickMonth ? MONTH_NAMES[(p.pickMonth) - 1] : "",
+        p.pickYear ? String(p.pickYear) : "",
+        String(p.nightlyPrice),
+        String(p.guests),
+        p.contactEmail,
+        p.websiteUrl || "",
+      ])
+    );
+  };
+
+  const handleDownloadNewsletterCSV = () => {
+    if (!subscribers) return;
+    downloadCSV("wellnest-newsletter-signups.csv",
+      ["First Name", "Last Name", "Email", "Signed Up"],
+      subscribers.map(s => [
+        s.firstName,
+        s.lastName,
+        s.email,
+        new Date(s.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }),
+      ])
+    );
+  };
+
+  const fixedPrefix = formData.name || formData.location || formData.category || formData.guests
+    ? `Experience the perfect blend of comfort and nature at ${formData.name || "[property name]"}. Located in the beautiful surroundings of ${formData.location || "[location]"}, this ${formData.category ? formData.category.toLowerCase() : "[category]"} offers an unforgettable escape for up to ${formData.guests || "[guests]"} guests.`
+    : `Experience the perfect blend of comfort and nature at [property name]. Located in the beautiful surroundings of [location], this [category] offers an unforgettable escape for up to [guests] guests.`;
+
   if (sessionLoading) {
     return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin" /></div>;
   }
-
-  const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
   return (
     <div className="min-h-screen bg-background/50 p-4 md:p-8">
@@ -278,136 +375,165 @@ export function AdminDashboard() {
             </p>
           </div>
           
-          <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-            <DialogTrigger asChild>
-              <Button
-                onClick={handleOpenCreate}
-                className="rounded-none bg-foreground text-background hover:bg-foreground/90 uppercase text-xs tracking-widest font-medium"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Add Pick
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle className="font-serif text-2xl">
-                  {editingId ? "Edit Property" : "Add Monthly Pick"}
-                </DialogTitle>
-              </DialogHeader>
-              
-              <form onSubmit={handleSubmit} className="space-y-6 mt-4">
-                {/* Monthly assignment */}
-                <div className="border border-primary/30 bg-primary/5 p-4 space-y-4">
-                  <p className="text-xs uppercase tracking-widest text-primary font-medium">
-                    Monthly Assignment
-                  </p>
-                  <div className="grid grid-cols-2 gap-4">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={handleDownloadCollectionCSV}
+              disabled={!properties || properties.length === 0}
+              className="rounded-none text-xs tracking-widest uppercase font-medium"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Download CSV
+            </Button>
+
+            <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+              <DialogTrigger asChild>
+                <Button
+                  onClick={handleOpenCreate}
+                  className="rounded-none bg-foreground text-background hover:bg-foreground/90 uppercase text-xs tracking-widest font-medium"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Pick
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle className="font-serif text-2xl">
+                    {editingId ? "Edit Property" : "Add Monthly Pick"}
+                  </DialogTitle>
+                </DialogHeader>
+                
+                <form onSubmit={handleSubmit} className="space-y-6 mt-4">
+                  {/* Monthly assignment */}
+                  <div className="border border-primary/30 bg-primary/5 p-4 space-y-4">
+                    <p className="text-xs uppercase tracking-widest text-primary font-medium">
+                      Monthly Assignment
+                    </p>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Month</Label>
+                        <Select
+                          value={String(formData.pickMonth)}
+                          onValueChange={v => setFormData({ ...formData, pickMonth: Number(v) })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select month" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {MONTHS.map(m => (
+                              <SelectItem key={m.value} value={String(m.value)}>{m.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Year</Label>
+                        <Select
+                          value={String(formData.pickYear)}
+                          onValueChange={v => setFormData({ ...formData, pickYear: Number(v) })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select year" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {YEARS.map(y => (
+                              <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <Label>Month</Label>
-                      <Select
-                        value={String(formData.pickMonth)}
-                        onValueChange={v => setFormData({ ...formData, pickMonth: Number(v) })}
-                      >
+                      <Label>Property Name</Label>
+                      <Input required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label>Category</Label>
+                      <Select value={formData.category} onValueChange={v => setFormData({ ...formData, category: v })}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select month" />
+                          <SelectValue placeholder="Select a category" />
                         </SelectTrigger>
                         <SelectContent>
-                          {MONTHS.map(m => (
-                            <SelectItem key={m.value} value={String(m.value)}>{m.label}</SelectItem>
+                          {CATEGORIES.map(c => (
+                            <SelectItem key={c} value={c}>{c}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     </div>
+                    
                     <div className="space-y-2">
-                      <Label>Year</Label>
-                      <Select
-                        value={String(formData.pickYear)}
-                        onValueChange={v => setFormData({ ...formData, pickYear: Number(v) })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select year" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {YEARS.map(y => (
-                            <SelectItem key={y} value={String(y)}>{y}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Label>Location</Label>
+                      <Input required value={formData.location} onChange={e => setFormData({ ...formData, location: e.target.value })} placeholder="e.g. Lake District, Cumbria" />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label>Contact Email</Label>
+                      <Input type="email" required value={formData.contactEmail} onChange={e => setFormData({ ...formData, contactEmail: e.target.value })} />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Website URL</Label>
+                      <Input type="url" value={formData.websiteUrl} onChange={e => setFormData({ ...formData, websiteUrl: e.target.value })} placeholder="https://example.com" />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Instagram Handle</Label>
+                      <Input value={formData.instagramHandle} onChange={e => setFormData({ ...formData, instagramHandle: e.target.value })} placeholder="@propertyhandle" />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label>Nightly Price (£)</Label>
+                      <Input type="number" required min="0" value={formData.nightlyPrice} onChange={e => setFormData({ ...formData, nightlyPrice: Number(e.target.value) })} />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label>Max Guests</Label>
+                      <Input type="number" required min="1" value={formData.guests} onChange={e => setFormData({ ...formData, guests: Number(e.target.value) })} />
                     </div>
                   </div>
-                </div>
 
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label>Property Name</Label>
-                    <Input required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label>Category</Label>
-                    <Select value={formData.category} onValueChange={v => setFormData({ ...formData, category: v })}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {CATEGORIES.map(c => (
-                          <SelectItem key={c} value={c}>{c}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label>Location</Label>
-                    <Input required value={formData.location} onChange={e => setFormData({ ...formData, location: e.target.value })} placeholder="e.g. Lake District, Cumbria" />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label>Contact Email</Label>
-                    <Input type="email" required value={formData.contactEmail} onChange={e => setFormData({ ...formData, contactEmail: e.target.value })} />
+                  {/* About this stay */}
+                  <div className="space-y-3 border border-border p-4">
+                    <p className="text-xs uppercase tracking-widest text-muted-foreground font-medium">About this stay</p>
+                    <div className="bg-muted/50 rounded px-3 py-2 text-sm text-muted-foreground italic leading-relaxed select-none">
+                      {fixedPrefix}
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground">Additional description (editable)</Label>
+                      <Textarea
+                        rows={4}
+                        value={formData.description}
+                        onChange={e => setFormData({ ...formData, description: e.target.value })}
+                        placeholder="Add more details about this property — what makes it special, nearby attractions, ideal guests..."
+                      />
+                    </div>
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Website URL</Label>
-                    <Input type="url" value={formData.websiteUrl} onChange={e => setFormData({ ...formData, websiteUrl: e.target.value })} placeholder="https://example.com" />
+                    <Label>Facilities (One per line)</Label>
+                    <Textarea rows={4} value={facilitiesText} onChange={e => setFacilitiesText(e.target.value)} placeholder={"Hot tub\nWood burner\nWiFi"} />
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Instagram Handle</Label>
-                    <Input value={formData.instagramHandle} onChange={e => setFormData({ ...formData, instagramHandle: e.target.value })} placeholder="@propertyhandle" />
+                    <Label>Image URLs (One per line, first is main image)</Label>
+                    <Textarea rows={4} value={imagesText} onChange={e => setImagesText(e.target.value)} placeholder={"https://example.com/image1.jpg\nhttps://example.com/image2.jpg"} />
                   </div>
-                  
-                  <div className="space-y-2">
-                    <Label>Nightly Price (£)</Label>
-                    <Input type="number" required min="0" value={formData.nightlyPrice} onChange={e => setFormData({ ...formData, nightlyPrice: Number(e.target.value) })} />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label>Max Guests</Label>
-                    <Input type="number" required min="1" value={formData.guests} onChange={e => setFormData({ ...formData, guests: Number(e.target.value) })} />
-                  </div>
-                </div>
 
-                <div className="space-y-2">
-                  <Label>Facilities (One per line)</Label>
-                  <Textarea rows={4} value={facilitiesText} onChange={e => setFacilitiesText(e.target.value)} placeholder={"Hot tub\nWood burner\nWiFi"} />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Image URLs (One per line, first is main image)</Label>
-                  <Textarea rows={4} value={imagesText} onChange={e => setImagesText(e.target.value)} placeholder={"https://example.com/image1.jpg\nhttps://example.com/image2.jpg"} />
-                </div>
-
-                <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)} className="rounded-none">Cancel</Button>
-                  <Button type="submit" disabled={createProp.isPending || updateProp.isPending} className="rounded-none bg-primary text-primary-foreground hover:bg-primary/90">
-                    {(createProp.isPending || updateProp.isPending) && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                    {editingId ? "Save Changes" : "Create Pick"}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
+                  <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)} className="rounded-none">Cancel</Button>
+                    <Button type="submit" disabled={createProp.isPending || updateProp.isPending} className="rounded-none bg-primary text-primary-foreground hover:bg-primary/90">
+                      {(createProp.isPending || updateProp.isPending) && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                      {editingId ? "Save Changes" : "Create Pick"}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
         <div className="bg-card border shadow-sm">
@@ -415,9 +541,30 @@ export function AdminDashboard() {
             <TableHeader className="bg-muted/50">
               <TableRow>
                 <TableHead className="font-serif">Property</TableHead>
-                <TableHead className="font-serif">Category</TableHead>
-                <TableHead className="font-serif">Month</TableHead>
-                <TableHead className="font-serif text-right">Price</TableHead>
+                <TableHead className="font-serif">
+                  <button
+                    onClick={() => handleSort("category")}
+                    className="flex items-center hover:text-foreground transition-colors"
+                  >
+                    Category {sortIcon("category")}
+                  </button>
+                </TableHead>
+                <TableHead className="font-serif">
+                  <button
+                    onClick={() => handleSort("month")}
+                    className="flex items-center hover:text-foreground transition-colors"
+                  >
+                    Month {sortIcon("month")}
+                  </button>
+                </TableHead>
+                <TableHead className="font-serif text-right">
+                  <button
+                    onClick={() => handleSort("price")}
+                    className="flex items-center ml-auto hover:text-foreground transition-colors"
+                  >
+                    Price {sortIcon("price")}
+                  </button>
+                </TableHead>
                 <TableHead className="font-serif text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -432,14 +579,14 @@ export function AdminDashboard() {
                     <TableCell><Skeleton className="h-8 w-24 ml-auto" /></TableCell>
                   </TableRow>
                 ))
-              ) : properties?.length === 0 ? (
+              ) : sortedProperties.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="h-32 text-center text-muted-foreground font-light">
                     No properties added yet.
                   </TableCell>
                 </TableRow>
               ) : (
-                properties?.map((property) => (
+                sortedProperties.map((property) => (
                   <TableRow key={property.id}>
                     <TableCell>
                       <div className="font-medium text-foreground">{property.name}</div>
@@ -490,6 +637,15 @@ export function AdminDashboard() {
               <p className="text-sm text-muted-foreground font-light">
                 {subscribers?.length ?? 0} subscriber{(subscribers?.length ?? 0) !== 1 ? "s" : ""} signed up
               </p>
+              <Button
+                variant="outline"
+                onClick={handleDownloadNewsletterCSV}
+                disabled={!subscribers || subscribers.length === 0}
+                className="rounded-none text-xs tracking-widest uppercase font-medium"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Download CSV
+              </Button>
             </div>
             <div className="bg-card border shadow-sm">
               <Table>

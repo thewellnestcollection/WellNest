@@ -23,6 +23,8 @@ export interface Property {
   /** @nullable */
   instagramHandle?: string | null;
   images: string[];
+  /** @nullable */
+  description?: string | null;
   featured: boolean;
   /** @nullable */
   pickMonth: number | null;
@@ -48,6 +50,7 @@ export interface CreatePropertyBody {
   websiteUrl?: string;
   instagramHandle?: string;
   images: string[];
+  description?: string;
   featured?: boolean;
   pickMonth: number;
   pickYear: number;
@@ -64,6 +67,7 @@ export interface UpdatePropertyBody {
   websiteUrl?: string;
   instagramHandle?: string;
   images?: string[];
+  description?: string;
   featured?: boolean;
   pickMonth?: number;
   pickYear?: number;

@@ -20,6 +20,8 @@ export interface Property {
   /** @nullable */
   instagramHandle?: string | null;
   images: string[];
+  /** @nullable */
+  description?: string | null;
   featured: boolean;
   /** @nullable */
   pickMonth: number | null;

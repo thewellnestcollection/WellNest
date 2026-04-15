@@ -162,9 +162,13 @@ export function PropertyDetails() {
                   Experience the perfect blend of comfort and nature at {property.name}.
                   Located in the beautiful surroundings of {property.location}, this {property.category.toLowerCase()} offers an unforgettable escape for up to {property.guests} guests.
                 </p>
-                <p>
-                  Every detail has been carefully considered to ensure a restful stay. Whether you're looking for a peaceful retreat or a base to explore the local area, this property provides the ideal setting for your next getaway.
-                </p>
+                {property.description ? (
+                  <p>{property.description}</p>
+                ) : (
+                  <p>
+                    Every detail has been carefully considered to ensure a restful stay. Whether you're looking for a peaceful retreat or a base to explore the local area, this property provides the ideal setting for your next getaway.
+                  </p>
+                )}
               </div>
             </section>
 

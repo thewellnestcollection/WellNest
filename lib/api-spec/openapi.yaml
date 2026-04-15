@@ -376,6 +376,8 @@ components:
           type: array
           items:
             type: string
+        description:
+          type: ["string", "null"]
         featured:
           type: boolean
         pickMonth:
@@ -440,6 +442,8 @@ components:
           type: array
           items:
             type: string
+        description:
+          type: string
         featured:
           type: boolean
         pickMonth:
@@ -485,6 +489,8 @@ components:
           type: array
           items:
             type: string
+        description:
+          type: string
         featured:
           type: boolean
         pickMonth:

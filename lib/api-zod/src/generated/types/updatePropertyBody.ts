@@ -17,6 +17,7 @@ export interface UpdatePropertyBody {
   websiteUrl?: string;
   instagramHandle?: string;
   images?: string[];
+  description?: string;
   featured?: boolean;
   pickMonth?: number;
   pickYear?: number;
