@@ -57,10 +57,10 @@ export function PropertyCard({ property, showCategory, showMonthBadge }: Propert
           <h3 className="font-serif text-xl font-medium leading-snug group-hover:text-primary transition-colors line-clamp-1">
             {property.name}
           </h3>
-          <p className="font-sans text-sm font-medium whitespace-nowrap">
-            <span className="text-muted-foreground font-normal">From </span>&pound;{property.nightlyPrice}{" "}
-            <span className="text-muted-foreground font-normal">/nt</span>
-          </p>
+          <div className="text-right whitespace-nowrap shrink-0">
+            <div className="text-xs text-muted-foreground font-normal">From</div>
+            <div className="font-sans text-sm font-medium">&pound;{property.nightlyPrice}{" "}<span className="text-muted-foreground font-normal">/nt</span></div>
+          </div>
         </div>
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-1">
