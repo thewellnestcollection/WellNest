@@ -96,7 +96,10 @@ router.post("/admin/properties", async (req, res): Promise<void> => {
       guests: parsed.data.guests,
       facilities: parsed.data.facilities,
       contactEmail: parsed.data.contactEmail,
+      websiteUrl: parsed.data.websiteUrl ?? null,
+      instagramHandle: parsed.data.instagramHandle ?? null,
       images: parsed.data.images,
+      description: parsed.data.description ?? null,
       featured: parsed.data.featured ?? false,
       pickMonth: parsed.data.pickMonth,
       pickYear: parsed.data.pickYear,
@@ -135,7 +138,10 @@ router.patch("/admin/properties/:id", async (req, res): Promise<void> => {
   if (parsed.data.guests !== undefined) updateData.guests = parsed.data.guests;
   if (parsed.data.facilities !== undefined) updateData.facilities = parsed.data.facilities;
   if (parsed.data.contactEmail !== undefined) updateData.contactEmail = parsed.data.contactEmail;
+  if (parsed.data.websiteUrl !== undefined) updateData.websiteUrl = parsed.data.websiteUrl;
+  if (parsed.data.instagramHandle !== undefined) updateData.instagramHandle = parsed.data.instagramHandle;
   if (parsed.data.images !== undefined) updateData.images = parsed.data.images;
+  if (parsed.data.description !== undefined) updateData.description = parsed.data.description;
   if (parsed.data.featured !== undefined) updateData.featured = parsed.data.featured;
   if (parsed.data.pickMonth !== undefined) updateData.pickMonth = parsed.data.pickMonth;
   if (parsed.data.pickYear !== undefined) updateData.pickYear = parsed.data.pickYear;
