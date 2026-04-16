@@ -58,7 +58,7 @@ export function PropertyCard({ property, showCategory, showMonthBadge }: Propert
             {property.name}
           </h3>
           <p className="font-sans text-sm font-medium whitespace-nowrap">
-            &pound;{property.nightlyPrice}{" "}
+            <span className="text-muted-foreground font-normal">From </span>&pound;{property.nightlyPrice}{" "}
             <span className="text-muted-foreground font-normal">/nt</span>
           </p>
         </div>
