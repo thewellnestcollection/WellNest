@@ -147,7 +147,7 @@ export function PropertyDetails() {
 
             <div className="text-left md:text-right shrink-0 border-t md:border-t-0 pt-6 md:pt-0 border-border">
               <div className="text-3xl md:text-4xl font-serif">&pound;{property.nightlyPrice}</div>
-              <div className="text-muted-foreground text-sm uppercase tracking-wider mt-1">Price from</div>
+              <div className="text-muted-foreground text-sm uppercase tracking-wider mt-1">Price from / nt</div>
             </div>
           </div>
         </div>
