@@ -200,7 +200,7 @@ export function Home() {
             {/* Newsletter promo card — fills the empty 8th slot */}
             <button
               onClick={() => setNewsletterOpen(true)}
-              className="group text-left flex flex-col justify-between bg-[#3d3a30] text-white rounded-none p-8 min-h-[280px] hover:bg-[#4a4640] transition-colors"
+              className="group text-left flex flex-col justify-between bg-[#7a7060] text-white rounded-none p-8 min-h-[280px] hover:bg-[#857a6a] transition-colors"
             >
               <div>
                 <p className="text-xs uppercase tracking-[0.2em] text-white/50 mb-4">The WellNest Collection</p>
