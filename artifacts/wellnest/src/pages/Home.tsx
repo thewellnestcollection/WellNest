@@ -197,6 +197,24 @@ export function Home() {
               .map((property) => (
                 <PropertyCard key={property.id} property={property} showCategory />
               ))}
+            {/* Newsletter promo card — fills the empty 8th slot */}
+            <button
+              onClick={() => setNewsletterOpen(true)}
+              className="group text-left flex flex-col justify-between bg-[#3d3a30] text-white rounded-none p-8 min-h-[280px] hover:bg-[#4a4640] transition-colors"
+            >
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-white/50 mb-4">The WellNest Collection</p>
+                <h3 className="font-serif text-2xl leading-snug mb-3">
+                  Be first to discover next month's picks
+                </h3>
+                <p className="text-sm text-white/65 font-light leading-relaxed">
+                  Join our free monthly newsletter and we'll deliver the new collection straight to your inbox.
+                </p>
+              </div>
+              <span className="mt-6 inline-block text-xs uppercase tracking-widest border-b border-white/40 pb-0.5 group-hover:border-white transition-colors">
+                Subscribe free →
+              </span>
+            </button>
           </div>
         )}
       </section>
