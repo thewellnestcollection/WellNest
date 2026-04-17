@@ -63,11 +63,11 @@ export function PropertyCard({ property, showCategory, showMonthBadge }: Propert
           </div>
         </div>
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <MapPin className="w-3.5 h-3.5" />
-            <span className="line-clamp-1">{property.location}</span>
+          <div className="flex items-center gap-1 min-w-0">
+            <MapPin className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">{property.location}</span>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 shrink-0">
             <Users className="w-3.5 h-3.5" />
             <span>Up to {property.guests}</span>
           </div>
