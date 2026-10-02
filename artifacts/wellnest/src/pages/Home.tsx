@@ -1,79 +1,131 @@
 import { useState, useRef, useEffect } from "react";
-import { useGetMonthlyPicks, useGetAvailableMonths } from "@workspace/api-client-react";
+import { useQuery } from "@tanstack/react-query";
 import { PropertyCard } from "@/components/property/PropertyCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { NewsletterModal } from "@/components/NewsletterModal";
 
-const MONTH_NAMES = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December"
-];
-const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+// ─── Season types ──────────────────────────────────────────────────────────────
 
-const NOW = new Date();
-const CURRENT_YEAR = NOW.getFullYear();
-const CURRENT_MONTH = NOW.getMonth() + 1;
-const LAUNCH_YEAR = 2025;
+type SeasonName = "winter" | "spring" | "summer" | "autumn";
 
-const AVAILABLE_YEARS = Array.from(
-  { length: CURRENT_YEAR - LAUNCH_YEAR + 1 },
-  (_, i) => CURRENT_YEAR - i
-);
+interface SeasonOption {
+  season: SeasonName;
+  year: number;
+  label: string;      // e.g. "Winter 2025/26", "Spring 2026"
+  sortKey: number;
+}
+
+interface AvailableSeasonsResponse {
+  seasons: SeasonOption[];
+}
+
+// ─── Property type (minimal, matching API response) ────────────────────────────
+
+interface Property {
+  id: number;
+  name: string;
+  category: string;
+  location: string;
+  nightlyPrice: number;
+  guests: number;
+  facilities: string[];
+  contactEmail: string;
+  websiteUrl: string | null;
+  instagramHandle: string | null;
+  images: string[];
+  description: string | null;
+  featured: boolean;
+  pickMonth: number | null;
+  pickYear: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ─── Season icons & colours ────────────────────────────────────────────────────
+
+const SEASON_ICONS: Record<SeasonName, string> = {
+  winter: "❄",
+  spring: "✿",
+  summer: "☀",
+  autumn: "🍂",
+};
+
+// ─── API fetchers ──────────────────────────────────────────────────────────────
+
+async function fetchAvailableSeasons(): Promise<AvailableSeasonsResponse> {
+  const res = await fetch("/api/properties/available-seasons");
+  if (!res.ok) throw new Error("Failed to load seasons");
+  return res.json();
+}
+
+async function fetchSeasonalPicks(season: SeasonName, year: number): Promise<Property[]> {
+  const res = await fetch(`/api/properties/seasonal?season=${season}&year=${year}`);
+  if (!res.ok) throw new Error("Failed to load picks");
+  return res.json();
+}
+
+// ─── Helpers ───────────────────────────────────────────────────────────────────
+
+function getCurrentSeason(): { season: SeasonName; year: number } {
+  const now = new Date();
+  const month = now.getMonth() + 1;
+  const year = now.getFullYear();
+
+  if (month >= 3 && month <= 5) return { season: "spring", year };
+  if (month >= 6 && month <= 8) return { season: "summer", year };
+  if (month >= 9 && month <= 11) return { season: "autumn", year };
+  // Dec or Jan/Feb
+  return { season: "winter", year: month === 12 ? year + 1 : year };
+}
+
+// ─── Component ─────────────────────────────────────────────────────────────────
 
 export function Home() {
   const picksRef = useRef<HTMLElement>(null);
-
-  // Read year/month from URL params (e.g. /?year=2026&month=3)
-  const urlParams = new URLSearchParams(window.location.search);
-  const urlYear = urlParams.get("year") ? parseInt(urlParams.get("year")!, 10) : null;
-  const urlMonth = urlParams.get("month") ? parseInt(urlParams.get("month")!, 10) : null;
-
-  const [selectedYear, setSelectedYear] = useState(urlYear ?? CURRENT_YEAR);
-  const [selectedMonth, setSelectedMonth] = useState(urlMonth ?? CURRENT_MONTH);
   const [newsletterOpen, setNewsletterOpen] = useState(false);
 
-  // Scroll to picks section when URL params are provided
+  // ── Load available seasons ──
+  const { data: seasonsData, isLoading: seasonsLoading } = useQuery({
+    queryKey: ["available-seasons"],
+    queryFn: fetchAvailableSeasons,
+    staleTime: 5 * 60_000,
+  });
+
+  const seasons = seasonsData?.seasons ?? [];
+
+  // ── Selected season state — default to current season or most recent ──
+  const fallback = getCurrentSeason();
+  const [selectedSeason, setSelectedSeason] = useState<SeasonName>(fallback.season);
+  const [selectedYear, setSelectedYear] = useState<number>(fallback.year);
+
+  // Once seasons load, snap to closest available season
   useEffect(() => {
-    if ((urlYear || urlMonth) && picksRef.current) {
-      setTimeout(() => picksRef.current?.scrollIntoView({ behavior: "smooth" }), 300);
+    if (seasons.length === 0) return;
+    const match = seasons.find(
+      (s) => s.season === selectedSeason && s.year === selectedYear
+    );
+    if (!match) {
+      // Use the most recent available season
+      const last = seasons[seasons.length - 1];
+      setSelectedSeason(last.season as SeasonName);
+      setSelectedYear(last.year);
     }
-  }, []);
+  }, [seasons.map((s) => s.season + s.year).join(",")]);
 
-  const { data: availableData } = useGetAvailableMonths(
-    { year: selectedYear },
-    { query: { staleTime: 60_000 } }
-  );
+  // ── Load picks for selected season ──
+  const { data: picks, isLoading: picksLoading } = useQuery({
+    queryKey: ["seasonal-picks", selectedSeason, selectedYear],
+    queryFn: () => fetchSeasonalPicks(selectedSeason, selectedYear),
+    staleTime: 60_000,
+    enabled: !!selectedSeason && !!selectedYear,
+  });
 
-  // Months that have at least one pick, sorted descending (most recent first)
-  const months: number[] = availableData?.months
-    ? [...availableData.months].sort((a, b) => b - a)
-    : [];
-
-  // When the available months change (e.g. year switch), default to most recent
-  useEffect(() => {
-    if (months.length > 0 && !months.includes(selectedMonth)) {
-      setSelectedMonth(months[0]);
-    }
-  }, [months.join(",")]);
-
-  const handleYearChange = (year: number) => {
-    setSelectedYear(year);
-    // selectedMonth will be corrected by the useEffect above once new months load
-  };
-
-  const { data: monthlyPicks, isLoading } = useGetMonthlyPicks(
-    { month: selectedMonth, year: selectedYear },
-    { query: { staleTime: 60_000 } }
-  );
+  // Selected season label
+  const selectedLabel = seasons.find(
+    (s) => s.season === selectedSeason && s.year === selectedYear
+  )?.label ?? `${selectedSeason.charAt(0).toUpperCase() + selectedSeason.slice(1)} ${selectedYear}`;
 
   const scrollToPicks = () => {
     picksRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -81,7 +133,7 @@ export function Home() {
 
   return (
     <main className="flex-1">
-      {/* Hero */}
+      {/* ── Hero ── */}
       <section className="relative h-[80vh] min-h-[580px] flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 z-0">
           <img
@@ -99,7 +151,7 @@ export function Home() {
             Handpicked wellness stays across the UK
           </h1>
           <p className="text-lg md:text-xl text-white/80 font-light max-w-xl mx-auto leading-relaxed">
-            Follow our monthly curation — one extraordinary retreat per category, chosen for those who value rest and renewal.
+            Each season we curate one extraordinary retreat per category — chosen for those who value rest and renewal.
           </p>
           <div className="pt-2 flex flex-col items-center gap-2">
             <button
@@ -109,68 +161,59 @@ export function Home() {
               Join The WellNest Collection
             </button>
             <p className="text-white/65 text-xs font-bold tracking-wide">
-              Subscribe to our free monthly newsletter
+              Subscribe to our free seasonal newsletter
             </p>
           </div>
         </div>
       </section>
 
-      {/* Monthly Picks Section */}
+      {/* ── Seasonal Picks Section ── */}
       <section ref={picksRef} className="py-16 md:py-24 container mx-auto px-4 md:px-6">
 
-        {/* Header: year on left, year dropdown on right */}
-        <div className="flex items-start justify-between gap-4 mb-8">
-          <div>
-            <p className="text-xs uppercase tracking-widest text-muted-foreground mb-2">
-              Monthly Selection
-            </p>
-            <h2 className="text-3xl md:text-4xl font-serif">
-              {selectedYear}
-            </h2>
-          </div>
-          <div className="mt-2">
-            <Select
-              value={String(selectedYear)}
-              onValueChange={(v) => handleYearChange(Number(v))}
-            >
-              <SelectTrigger className="w-28 rounded-none border-border bg-transparent text-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {AVAILABLE_YEARS.map((year) => (
-                  <SelectItem key={year} value={String(year)}>
-                    {year}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        {/* Header */}
+        <div className="mb-8">
+          <p className="text-xs uppercase tracking-widest text-muted-foreground mb-2">
+            Seasonal Selection
+          </p>
+          <h2 className="text-3xl md:text-4xl font-serif">
+            {selectedLabel}
+          </h2>
         </div>
 
-        {/* Month tab strip — only months for the selected year */}
-        <div className="flex gap-1.5 flex-wrap mb-12">
-          {months.map((month) => (
-            <button
-              key={month}
-              onClick={() => setSelectedMonth(month)}
-              className={`px-5 py-2 text-xs font-medium border transition-all duration-150 ${
-                month === selectedMonth
-                  ? "bg-foreground text-background border-foreground"
-                  : "bg-transparent text-muted-foreground border-border hover:border-foreground/40 hover:text-foreground"
-              }`}
-            >
-              {MONTH_SHORT[month - 1]}
-            </button>
-          ))}
-        </div>
-
-        {/* Current selection label */}
-        <p className="text-sm text-muted-foreground mb-8">
-          {MONTH_NAMES[selectedMonth - 1]} {selectedYear}
-        </p>
+        {/* Season tabs */}
+        {seasonsLoading ? (
+          <div className="flex gap-2 mb-12">
+            {[1, 2, 3, 4].map((i) => (
+              <Skeleton key={i} className="h-9 w-28" />
+            ))}
+          </div>
+        ) : (
+          <div className="flex gap-1.5 flex-wrap mb-12">
+            {seasons.map((s) => {
+              const isActive = s.season === selectedSeason && s.year === selectedYear;
+              return (
+                <button
+                  key={`${s.season}-${s.year}`}
+                  onClick={() => {
+                    setSelectedSeason(s.season as SeasonName);
+                    setSelectedYear(s.year);
+                  }}
+                  className={`flex items-center gap-2 px-5 py-2.5 text-xs font-medium border transition-all duration-150 ${
+                    isActive
+                      ? "bg-foreground text-background border-foreground"
+                      : "bg-transparent text-muted-foreground border-border hover:border-foreground/40 hover:text-foreground"
+                  }`}
+                >
+                  <span className="text-sm leading-none">{SEASON_ICONS[s.season as SeasonName]}</span>
+                  <span>{s.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         {/* Grid */}
-        {isLoading ? (
+        {picksLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-8 gap-y-12">
             {[1, 2, 3, 4, 5, 6, 7].map((i) => (
               <div key={i} className="space-y-4">
@@ -181,45 +224,76 @@ export function Home() {
               </div>
             ))}
           </div>
-        ) : !monthlyPicks || monthlyPicks.length === 0 ? (
+        ) : !picks || picks.length === 0 ? (
           <div className="text-center py-32 border border-dashed border-border">
             <p className="font-serif text-2xl text-muted-foreground/60 mb-3">
               Nothing curated yet
             </p>
             <p className="text-sm text-muted-foreground">
-              No picks have been selected for {MONTH_NAMES[selectedMonth - 1]} {selectedYear}.
+              No picks have been selected for {selectedLabel}.
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-8 gap-y-12">
-            {[...monthlyPicks]
-              .sort((a, b) => (a.category === "Pick of the Month" ? -1 : b.category === "Pick of the Month" ? 1 : 0))
-              .map((property) => (
-                <PropertyCard key={property.id} property={property} showCategory />
-              ))}
-            {/* Newsletter promo card — fills the empty 8th slot */}
+          <>
+            {/* Group by month within the season */}
+            {groupByMonth(picks).map(({ label: monthLabel, properties }) => (
+              <div key={monthLabel} className="mb-16">
+                <p className="text-xs uppercase tracking-widest text-muted-foreground mb-6 pb-2 border-b border-border/50">
+                  {monthLabel}
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-8 gap-y-12">
+                  {[...properties]
+                    .sort((a, b) =>
+                      a.category === "Pick of the Month" ? -1 : b.category === "Pick of the Month" ? 1 : 0
+                    )
+                    .map((property) => (
+                      <PropertyCard key={property.id} property={property} showCategory />
+                    ))}
+                </div>
+              </div>
+            ))}
+
+            {/* Newsletter promo tile */}
             <button
               onClick={() => setNewsletterOpen(true)}
-              className="group text-left flex flex-col justify-between bg-[#7a7060] text-white rounded-none p-8 min-h-[280px] hover:bg-[#857a6a] transition-colors"
+              className="group text-left flex flex-col justify-between bg-[#7a7060] text-white rounded-none p-8 min-h-[280px] hover:bg-[#857a6a] transition-colors w-full md:w-auto"
             >
               <div>
                 <p className="text-xs uppercase tracking-[0.2em] text-white/50 mb-4">The WellNest Collection</p>
                 <h3 className="font-serif text-2xl leading-snug mb-3">
-                  Be first to discover next month's picks
+                  Be first to discover next season's picks
                 </h3>
                 <p className="text-sm text-white/65 font-light leading-relaxed">
-                  Join our free monthly newsletter and we'll deliver the new collection straight to your inbox.
+                  Join our free seasonal newsletter and we'll deliver the new collection straight to your inbox.
                 </p>
               </div>
               <span className="mt-6 inline-block text-xs uppercase tracking-widest border-b border-white/40 pb-0.5 group-hover:border-white transition-colors">
                 Subscribe free →
               </span>
             </button>
-          </div>
+          </>
         )}
       </section>
 
-      {/* Definition / About section */}
+      {/* ── WellNest Finder CTA ── */}
+      <section className="py-20 bg-[#f5f0eb] border-t border-border">
+        <div className="container mx-auto px-4 md:px-6 text-center max-w-2xl">
+          <p className="text-xs uppercase tracking-widest text-muted-foreground mb-3">WellNest Finder</p>
+          <h2 className="font-serif text-3xl md:text-4xl mb-4">
+            Not sure where to start?
+          </h2>
+          <p className="text-muted-foreground font-light leading-relaxed mb-8">
+            Answer five quick questions and we'll match you with the properties in our collection that fit your style, setting and budget.
+          </p>
+          <Link href="/finder">
+            <Button className="rounded-none bg-foreground text-background hover:bg-foreground/85 h-12 px-8 uppercase text-xs tracking-widest font-medium">
+              Find my perfect stay →
+            </Button>
+          </Link>
+        </div>
+      </section>
+
+      {/* ── About / Definition ── */}
       <section className="py-24 bg-white border-t border-border">
         <div className="container mx-auto px-4 md:px-6">
           <div className="grid md:grid-cols-2 gap-12 items-center">
@@ -231,7 +305,6 @@ export function Home() {
               />
             </div>
             <div className="space-y-6 md:pl-12 lg:pl-20">
-
               {/* Dictionary-style definition */}
               <div className="space-y-1 pb-4 border-b border-border">
                 <div className="flex items-baseline gap-3 flex-wrap">
@@ -248,7 +321,7 @@ export function Home() {
                 We believe that where you stay matters. It's not just a bed for the night — it's the backdrop to your memories. The WellNest Collection brings together the most thoughtfully designed spaces across the United Kingdom.
               </p>
               <p className="text-base text-muted-foreground font-light leading-relaxed">
-                Each month we select one standout property in each of our seven categories — from working farms to grand estate manors — so you always know where to go next.
+                Each season we select one standout property in each of our seven categories — from working farms to grand estate manors — so you always know where to go next.
               </p>
 
               <div className="pt-2 space-y-2">
@@ -259,7 +332,7 @@ export function Home() {
                   Join The WellNest Collection
                 </Button>
                 <p className="text-xs text-muted-foreground font-bold">
-                  Subscribe to our free monthly newsletter
+                  Subscribe to our free seasonal newsletter
                 </p>
               </div>
             </div>
@@ -270,4 +343,28 @@ export function Home() {
       <NewsletterModal open={newsletterOpen} onOpenChange={setNewsletterOpen} />
     </main>
   );
+}
+
+// ─── Helper: group properties by month label ────────────────────────────────────
+
+const MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+function groupByMonth(properties: Property[]): Array<{ label: string; properties: Property[] }> {
+  const order: string[] = [];
+  const map = new Map<string, Property[]>();
+
+  for (const p of properties) {
+    if (!p.pickMonth || !p.pickYear) continue;
+    const key = `${MONTH_NAMES[p.pickMonth - 1]} ${p.pickYear}`;
+    if (!map.has(key)) {
+      order.push(key);
+      map.set(key, []);
+    }
+    map.get(key)!.push(p);
+  }
+
+  return order.map((label) => ({ label, properties: map.get(label)! }));
 }

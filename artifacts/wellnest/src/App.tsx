@@ -12,6 +12,7 @@ import { Collection } from "@/pages/Collection";
 import { PropertyDetails } from "@/pages/PropertyDetails";
 import { AdminLogin } from "@/pages/AdminLogin";
 import { AdminDashboard } from "@/pages/AdminDashboard";
+import { Finder } from "@/pages/Finder";
 
 function ScrollToTop() {
   const [location] = useLocation();
@@ -23,7 +24,6 @@ function ScrollToTop() {
 
 const queryClient = new QueryClient();
 
-// Wrapper to hide Navbar/Footer on certain routes
 function LayoutWrapper({ children, hideHeaderFooter = false }: { children: React.ReactNode, hideHeaderFooter?: boolean }) {
   return (
     <div className="min-h-[100dvh] flex flex-col font-sans">
@@ -44,6 +44,9 @@ function Router() {
       </Route>
       <Route path="/collection">
         <LayoutWrapper><Collection /></LayoutWrapper>
+      </Route>
+      <Route path="/finder">
+        <LayoutWrapper><Finder /></LayoutWrapper>
       </Route>
       <Route path="/properties/:id">
         <LayoutWrapper><PropertyDetails /></LayoutWrapper>
@@ -66,7 +69,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+        <WouterRouter base="">
           <Router />
         </WouterRouter>
         <Toaster />
