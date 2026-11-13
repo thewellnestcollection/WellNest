@@ -236,7 +236,7 @@ export function Home() {
         ) : (
           <>
             {/* Group by month within the season */}
-            {groupByMonth(picks).map(({ label: monthLabel, properties }) => (
+            {groupByMonth(picks).map(({ label: monthLabel, properties }, groupIndex, arr) => (
               <div key={monthLabel} className="mb-16">
                 <p className="text-xs uppercase tracking-widest text-muted-foreground mb-6 pb-2 border-b border-border/50">
                   {monthLabel}
@@ -244,33 +244,35 @@ export function Home() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-8 gap-y-12">
                   {[...properties]
                     .sort((a, b) =>
-                      a.category === "Pick of the Month" ? -1 : b.category === "Pick of the Month" ? 1 : 0
+                      a.category === "Pick of the Season" ? -1 : b.category === "Pick of the Season" ? 1 : 0
                     )
                     .map((property) => (
                       <PropertyCard key={property.id} property={property} showCategory />
                     ))}
+
+                  {/* Newsletter promo tile — inline with last month's cards */}
+                  {groupIndex === arr.length - 1 && (
+                    <button
+                      onClick={() => setNewsletterOpen(true)}
+                      className="group text-left flex flex-col justify-between bg-[#7a7060] text-white rounded-none p-8 min-h-[280px] hover:bg-[#857a6a] transition-colors"
+                    >
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.2em] text-white/50 mb-4">The WellNest Collection</p>
+                        <h3 className="font-serif text-2xl leading-snug mb-3">
+                          Be first to discover next season's pick
+                        </h3>
+                        <p className="text-sm text-white/65 font-light leading-relaxed">
+                          Join our free seasonal newsletter and we'll deliver the new collection straight to your inbox.
+                        </p>
+                      </div>
+                      <span className="mt-6 inline-block text-xs uppercase tracking-widest border-b border-white/40 pb-0.5 group-hover:border-white transition-colors">
+                        Subscribe free →
+                      </span>
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
-
-            {/* Newsletter promo tile */}
-            <button
-              onClick={() => setNewsletterOpen(true)}
-              className="group text-left flex flex-col justify-between bg-[#7a7060] text-white rounded-none p-8 min-h-[280px] hover:bg-[#857a6a] transition-colors w-full md:w-auto"
-            >
-              <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-white/50 mb-4">The WellNest Collection</p>
-                <h3 className="font-serif text-2xl leading-snug mb-3">
-                  Be first to discover next season's picks
-                </h3>
-                <p className="text-sm text-white/65 font-light leading-relaxed">
-                  Join our free seasonal newsletter and we'll deliver the new collection straight to your inbox.
-                </p>
-              </div>
-              <span className="mt-6 inline-block text-xs uppercase tracking-widest border-b border-white/40 pb-0.5 group-hover:border-white transition-colors">
-                Subscribe free →
-              </span>
-            </button>
           </>
         )}
       </section>
