@@ -11,8 +11,10 @@ interface PropertyCardProps {
 }
 
 export function PropertyCard({ property, showCategory, showMonthBadge }: PropertyCardProps) {
-  const mainImage = property.images?.[0] 
-  ? `${import.meta.env.VITE_API_URL}${property.images[0]}`
+  const mainImage = property.images?.[0]
+  ? property.images[0].startsWith('http')
+    ? property.images[0]
+    : `https://workspaceapi-server-production-3677.up.railway.app${property.images[0]}`
   : "/images/property-placeholder.png";
   const isPick = property.category === "Pick of the Month";
 
