@@ -2,30 +2,38 @@ import { Property } from "@workspace/api-client-react/src/generated/api.schemas"
 import { Link } from "wouter";
 import { MapPin, Users, Star } from "lucide-react";
 
-const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
 interface PropertyCardProps {
   property: Property;
   showCategory?: boolean;
-  showMonthBadge?: boolean;
+  showSeasonBadge?: boolean;
 }
 
-export function PropertyCard({ property, showCategory, showMonthBadge }: PropertyCardProps) {
+export function PropertyCard({ property, showCategory, showSeasonBadge }: PropertyCardProps) {
   const mainImage = property.images?.[0]
-  ? property.images[0].startsWith('http')
-    ? property.images[0]
-    : `https://workspaceapi-server-production-3677.up.railway.app${property.images[0]}`
-  : "/images/property-placeholder.png";
-  const isPick = property.category === "Pick of the Month";
+    ? property.images[0].startsWith("http")
+      ? property.images[0]
+      : `https://workspaceapi-server-production-3677.up.railway.app${property.images[0]}`
+    : "/images/property-placeholder.png";
 
-  const monthBadgeText =
-    showMonthBadge && property.pickMonth && property.pickYear
-      ? `${MONTH_SHORT[(property.pickMonth as number) - 1]} ${property.pickYear}`
+  const isPick =
+    property.category === "Pick of the Season" ||
+    property.category === "Pick of the Month";
+
+  const pickSeason = (property as any).pickSeason as string | null | undefined;
+  const pickYear = (property as any).pickYear as number | null | undefined;
+
+  const seasonBadgeText =
+    showSeasonBadge && pickSeason && pickYear
+      ? `${pickSeason} ${pickYear}`
       : null;
 
   return (
     <Link href={`/properties/${property.id}`} className="group block h-full">
-      <div className="relative aspect-[4/3] overflow-hidden mb-4 bg-muted">
+      <div
+        className={`relative aspect-[4/3] overflow-hidden mb-4 bg-muted ${
+          isPick ? "ring-2 ring-amber-700/35 ring-offset-2" : ""
+        }`}
+      >
         <img
           src={mainImage}
           alt={property.name}
@@ -34,18 +42,19 @@ export function PropertyCard({ property, showCategory, showMonthBadge }: Propert
         <div className="absolute inset-0 bg-black/10 transition-opacity duration-300 group-hover:opacity-0" />
 
         {isPick && (
-          <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-amber-900/90 backdrop-blur-sm px-2.5 py-1.5 text-[9px] font-semibold tracking-[0.18em] uppercase text-amber-100">
-            <Star className="w-2.5 h-2.5 fill-amber-300 text-amber-300" />
-            Pick of the Month
+          <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-amber-900/90 backdrop-blur-sm px-3 py-2 text-[9px] font-semibold tracking-[0.18em] uppercase text-amber-100">
+            <Star className="w-3 h-3 fill-amber-300 text-amber-300" />
+            Pick of the Season
           </div>
         )}
 
-        {monthBadgeText && (
+        {seasonBadgeText && (
           <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2.5 py-1 text-[10px] font-medium tracking-widest uppercase text-foreground">
-            {monthBadgeText}
+            {seasonBadgeText}
           </div>
         )}
       </div>
+
       <div className="space-y-1.5">
         {showCategory && !isPick && (
           <p className="text-[10px] uppercase tracking-[0.2em] text-primary font-medium">
@@ -54,7 +63,7 @@ export function PropertyCard({ property, showCategory, showMonthBadge }: Propert
         )}
         {showCategory && isPick && (
           <p className="text-[10px] uppercase tracking-[0.2em] text-amber-700 font-semibold">
-            Pick of the Month
+            Pick of the Season
           </p>
         )}
         <div className="flex items-start justify-between gap-4">
@@ -63,7 +72,10 @@ export function PropertyCard({ property, showCategory, showMonthBadge }: Propert
           </h3>
           <div className="text-right whitespace-nowrap shrink-0">
             <div className="text-xs text-muted-foreground font-normal">From</div>
-            <div className="font-sans text-sm font-medium">&pound;{property.nightlyPrice}{" "}<span className="text-muted-foreground font-normal">/nt</span></div>
+            <div className="font-sans text-sm font-medium">
+              &pound;{property.nightlyPrice}{" "}
+              <span className="text-muted-foreground font-normal">/nt</span>
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
