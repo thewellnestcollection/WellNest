@@ -9,8 +9,6 @@ import {
   UpdatePropertyBody,
   UpdatePropertyParams,
   DeletePropertyParams,
-  AdminListPropertiesResponse,
-  UpdatePropertyResponse,
 } from "@workspace/api-zod";
 import type { Request, Response } from "express";
 
@@ -65,7 +63,7 @@ router.get("/admin/properties", async (req, res): Promise<void> => {
   const properties = await db
     .select()
     .from(propertiesTable)
-    .orderBy(propertiesTable.pickYear, propertiesTable.pickMonth, propertiesTable.category);
+    .orderBy(propertiesTable.pickYear, propertiesTable.pickSeason, propertiesTable.category);
 
   const result = properties.map((p) => ({
     ...p,
@@ -74,7 +72,7 @@ router.get("/admin/properties", async (req, res): Promise<void> => {
     updatedAt: p.updatedAt.toISOString(),
   }));
 
-  res.json(AdminListPropertiesResponse.parse(result));
+  res.json(result);
 });
 
 router.post("/admin/properties", async (req, res): Promise<void> => {
@@ -85,6 +83,8 @@ router.post("/admin/properties", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
+
+  const body = req.body as any;
 
   const [property] = await db
     .insert(propertiesTable)
@@ -101,7 +101,7 @@ router.post("/admin/properties", async (req, res): Promise<void> => {
       images: parsed.data.images,
       description: parsed.data.description ?? null,
       featured: parsed.data.featured ?? false,
-      pickMonth: parsed.data.pickMonth,
+      pickSeason: body.pickSeason ?? null,
       pickYear: parsed.data.pickYear,
     })
     .returning();
@@ -130,73 +130,8 @@ router.patch("/admin/properties/:id", async (req, res): Promise<void> => {
     return;
   }
 
+  const body = req.body as any;
   const updateData: Record<string, unknown> = { updatedAt: new Date() };
+
   if (parsed.data.name !== undefined) updateData.name = parsed.data.name;
   if (parsed.data.category !== undefined) updateData.category = parsed.data.category;
-  if (parsed.data.location !== undefined) updateData.location = parsed.data.location;
-  if (parsed.data.nightlyPrice !== undefined) updateData.nightlyPrice = String(parsed.data.nightlyPrice);
-  if (parsed.data.guests !== undefined) updateData.guests = parsed.data.guests;
-  if (parsed.data.facilities !== undefined) updateData.facilities = parsed.data.facilities;
-  if (parsed.data.contactEmail !== undefined) updateData.contactEmail = parsed.data.contactEmail;
-  if (parsed.data.websiteUrl !== undefined) updateData.websiteUrl = parsed.data.websiteUrl;
-  if (parsed.data.instagramHandle !== undefined) updateData.instagramHandle = parsed.data.instagramHandle;
-  if (parsed.data.images !== undefined) updateData.images = parsed.data.images;
-  if (parsed.data.description !== undefined) updateData.description = parsed.data.description;
-  if (parsed.data.featured !== undefined) updateData.featured = parsed.data.featured;
-  if (parsed.data.pickMonth !== undefined) updateData.pickMonth = parsed.data.pickMonth;
-  if (parsed.data.pickYear !== undefined) updateData.pickYear = parsed.data.pickYear;
-
-  const [property] = await db
-    .update(propertiesTable)
-    .set(updateData)
-    .where(eq(propertiesTable.id, params.data.id))
-    .returning();
-
-  if (!property) {
-    res.status(404).json({ error: "Property not found" });
-    return;
-  }
-
-  res.json(
-    UpdatePropertyResponse.parse({
-      ...property,
-      nightlyPrice: parseFloat(property.nightlyPrice),
-      createdAt: property.createdAt.toISOString(),
-      updatedAt: property.updatedAt.toISOString(),
-    })
-  );
-});
-
-router.delete("/admin/properties/:id", async (req, res): Promise<void> => {
-  if (!requireAdmin(req, res)) return;
-
-  const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-  const params = DeletePropertyParams.safeParse({ id: parseInt(rawId, 10) });
-  if (!params.success) {
-    res.status(400).json({ error: params.error.message });
-    return;
-  }
-
-  const [property] = await db
-    .delete(propertiesTable)
-    .where(eq(propertiesTable.id, params.data.id))
-    .returning();
-
-  if (!property) {
-    res.status(404).json({ error: "Property not found" });
-    return;
-  }
-
-  res.sendStatus(204);
-});
-
-router.get("/admin/newsletter-subscribers", async (req, res): Promise<void> => {
-  if (!requireAdmin(req, res)) return;
-  const subscribers = await db
-    .select()
-    .from(newsletterSubscribersTable)
-    .orderBy(desc(newsletterSubscribersTable.createdAt));
-  res.json(subscribers);
-});
-
-export default router;
