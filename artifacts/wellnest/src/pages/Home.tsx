@@ -37,7 +37,7 @@ interface Property {
   images: string[];
   description: string | null;
   featured: boolean;
-  pickMonth: number | null;
+  pickSeason: string | null;
   pickYear: number | null;
   createdAt: string;
   updatedAt: string;
@@ -235,12 +235,13 @@ export function Home() {
           </div>
         ) : (
           <>
-            {/* Group by month within the season */}
-            {groupByMonth(picks).map(({ label: monthLabel, properties }, groupIndex, arr) => (
-              <div key={monthLabel} className="mb-16">
-                <p className="text-xs uppercase tracking-widest text-muted-foreground mb-6 pb-2 border-b border-border/50">
-                  {monthLabel}
-                </p>
+            {groupBySeason(picks).map(({ label: groupLabel, properties }, groupIndex, arr) => (
+              <div key={groupLabel || "season"} className="mb-16">
+                {groupLabel && (
+                  <p className="text-xs uppercase tracking-widest text-muted-foreground mb-6 pb-2 border-b border-border/50">
+                    {groupLabel}
+                  </p>
+                )}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-8 gap-y-12">
                   {[...properties]
                     .sort((a, b) =>
@@ -250,7 +251,7 @@ export function Home() {
                       <PropertyCard key={property.id} property={property} showCategory />
                     ))}
 
-                  {/* Newsletter promo tile — inline with last month's cards */}
+                  {/* Newsletter promo tile — inline with last group's cards */}
                   {groupIndex === arr.length - 1 && (
                     <button
                       onClick={() => setNewsletterOpen(true)}
@@ -347,26 +348,9 @@ export function Home() {
   );
 }
 
-// ─── Helper: group properties by month label ────────────────────────────────────
+// ─── Helper: group properties by season ────────────────────────────────────────
 
-const MONTH_NAMES = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
-];
-
-function groupByMonth(properties: Property[]): Array<{ label: string; properties: Property[] }> {
-  const order: string[] = [];
-  const map = new Map<string, Property[]>();
-
-  for (const p of properties) {
-    if (!p.pickMonth || !p.pickYear) continue;
-    const key = `${MONTH_NAMES[p.pickMonth - 1]} ${p.pickYear}`;
-    if (!map.has(key)) {
-      order.push(key);
-      map.set(key, []);
-    }
-    map.get(key)!.push(p);
-  }
-
-  return order.map((label) => ({ label, properties: map.get(label)! }));
+function groupBySeason(properties: Property[]): Array<{ label: string; properties: Property[] }> {
+  if (properties.length === 0) return [];
+  return [{ label: "", properties }];
 }
