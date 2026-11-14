@@ -24,7 +24,7 @@ export interface Property {
   description?: string | null;
   featured: boolean;
   /** @nullable */
-  pickSeason: string | null
+  pickSeason: string | null;
   /** @nullable */
   pickYear: number | null;
   createdAt: string;
