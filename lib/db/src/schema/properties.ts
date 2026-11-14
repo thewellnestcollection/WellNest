@@ -16,7 +16,7 @@ export const propertiesTable = pgTable("properties", {
   images: jsonb("images").$type<string[]>().notNull().default([]),
   description: text("description"),
   featured: boolean("featured").notNull().default(false),
-  pickMonth: integer("pick_month"),
+  pickSeason: text("pick_season"),
   pickYear: integer("pick_year"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
