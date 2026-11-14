@@ -7,18 +7,10 @@
  */
 import * as zod from "zod";
 
-/**
- * Returns server health status
- * @summary Health check
- */
 export const HealthCheckResponse = zod.object({
   status: zod.string(),
 });
 
-/**
- * Returns all published properties, optionally filtered by category or search
- * @summary List all properties
- */
 export const ListPropertiesQueryParams = zod.object({
   category: zod.coerce.string().optional(),
   search: zod.coerce.string().optional(),
@@ -45,22 +37,6 @@ export const ListPropertiesResponseItem = zod.object({
 });
 export const ListPropertiesResponse = zod.array(ListPropertiesResponseItem);
 
-/**
- * @summary Get seasons with picks
- */
-export const GetAvailableMonthsQueryParams = zod.object({
-  year: zod.coerce.number(),
-});
-
-export const GetAvailableMonthsResponse = zod.object({
-  year: zod.number(),
-  months: zod.array(zod.number()),
-});
-
-/**
- * Returns all available categories
- * @summary Get category list
- */
 export const GetPropertyCategoriesResponseItem = zod.object({
   category: zod.string(),
   count: zod.number(),
@@ -69,10 +45,6 @@ export const GetPropertyCategoriesResponse = zod.array(
   GetPropertyCategoriesResponseItem,
 );
 
-/**
- * Returns a single property by ID
- * @summary Get a property
- */
 export const GetPropertyParams = zod.object({
   id: zod.coerce.number(),
 });
@@ -82,4 +54,137 @@ export const GetPropertyResponse = zod.object({
   name: zod.string(),
   category: zod.string(),
   location: zod.string(),
-  nightlyPrice:
+  nightlyPrice: zod.number(),
+  guests: zod.number(),
+  facilities: zod.array(zod.string()),
+  contactEmail: zod.string(),
+  websiteUrl: zod.string().nullish(),
+  instagramHandle: zod.string().nullish(),
+  images: zod.array(zod.string()),
+  description: zod.string().nullish(),
+  featured: zod.boolean(),
+  pickSeason: zod.string().nullable(),
+  pickYear: zod.number().nullable(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+
+export const AdminListNewsletterSubscribersResponseItem = zod.object({
+  id: zod.number(),
+  firstName: zod.string(),
+  lastName: zod.string(),
+  email: zod.string(),
+  createdAt: zod.string(),
+});
+export const AdminListNewsletterSubscribersResponse = zod.array(
+  AdminListNewsletterSubscribersResponseItem,
+);
+
+export const SubscribeNewsletterBody = zod.object({
+  firstName: zod.string(),
+  lastName: zod.string(),
+  email: zod.string(),
+});
+
+export const SubscribeNewsletterResponse = zod.object({
+  success: zod.boolean(),
+  message: zod.string(),
+});
+
+export const AdminLoginBody = zod.object({
+  password: zod.string(),
+});
+
+export const AdminLoginResponse = zod.object({
+  success: zod.boolean(),
+  message: zod.string(),
+});
+
+export const AdminMeResponse = zod.object({
+  authenticated: zod.boolean(),
+});
+
+export const AdminListPropertiesResponseItem = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  category: zod.string(),
+  location: zod.string(),
+  nightlyPrice: zod.number(),
+  guests: zod.number(),
+  facilities: zod.array(zod.string()),
+  contactEmail: zod.string(),
+  websiteUrl: zod.string().nullish(),
+  instagramHandle: zod.string().nullish(),
+  images: zod.array(zod.string()),
+  description: zod.string().nullish(),
+  featured: zod.boolean(),
+  pickSeason: zod.string().nullable(),
+  pickYear: zod.number().nullable(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+export const AdminListPropertiesResponse = zod.array(
+  AdminListPropertiesResponseItem,
+);
+
+export const CreatePropertyBody = zod.object({
+  name: zod.string(),
+  category: zod.string(),
+  location: zod.string(),
+  nightlyPrice: zod.number(),
+  guests: zod.number(),
+  facilities: zod.array(zod.string()),
+  contactEmail: zod.string(),
+  websiteUrl: zod.string().optional(),
+  instagramHandle: zod.string().optional(),
+  images: zod.array(zod.string()),
+  description: zod.string().optional(),
+  featured: zod.boolean().optional(),
+  pickSeason: zod.string().optional(),
+  pickYear: zod.number().optional(),
+});
+
+export const UpdatePropertyParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdatePropertyBody = zod.object({
+  name: zod.string().optional(),
+  category: zod.string().optional(),
+  location: zod.string().optional(),
+  nightlyPrice: zod.number().optional(),
+  guests: zod.number().optional(),
+  facilities: zod.array(zod.string()).optional(),
+  contactEmail: zod.string().optional(),
+  websiteUrl: zod.string().optional(),
+  instagramHandle: zod.string().optional(),
+  images: zod.array(zod.string()).optional(),
+  description: zod.string().optional(),
+  featured: zod.boolean().optional(),
+  pickSeason: zod.string().optional(),
+  pickYear: zod.number().optional(),
+});
+
+export const UpdatePropertyResponse = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  category: zod.string(),
+  location: zod.string(),
+  nightlyPrice: zod.number(),
+  guests: zod.number(),
+  facilities: zod.array(zod.string()),
+  contactEmail: zod.string(),
+  websiteUrl: zod.string().nullish(),
+  instagramHandle: zod.string().nullish(),
+  images: zod.array(zod.string()),
+  description: zod.string().nullish(),
+  featured: zod.boolean(),
+  pickSeason: zod.string().nullable(),
+  pickYear: zod.number().nullable(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+
+export const DeletePropertyParams = zod.object({
+  id: zod.coerce.number(),
+});
