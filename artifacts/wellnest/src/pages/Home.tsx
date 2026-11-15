@@ -213,7 +213,7 @@ export function Home() {
                       : 0
                     )
                     .map((property) => (
-                      <PropertyCard key={property.id} property={property} showCategory showSeasonBadge />
+                      <PropertyCard key={property.id} property={property} showCategory />
                     ))}
                   {groupIndex === arr.length - 1 && (
                     <button
