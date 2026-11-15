@@ -65,14 +65,13 @@ interface FormData {
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
 const CATEGORIES = [
-  "Country House",
-  "Coastal Retreat",
-  "Forest & Woodland",
-  "Spa & Thermal",
-  "Working Farm",
-  "Estate & Manor",
-  "Eco & Sustainable",
   "Pick of the Season",
+  "Farmstay",
+  "Unique Stay",
+  "Cabin/hut",
+  "Cottage",
+  "Pub with Rooms",
+  "Estate/Manor",
 ];
 
 const SEASONS = [
