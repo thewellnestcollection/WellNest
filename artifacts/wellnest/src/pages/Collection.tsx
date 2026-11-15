@@ -15,7 +15,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-type SortOption = "default" | "category-asc" | "month-desc" | "month-asc" | "price-asc" | "price-desc";
+type SortOption = "default" | "category-asc" | "season-desc" | "season-asc" | "price-asc" | "price-desc";
+
+const SEASON_ORDER: Record<string, number> = {
+  Winter: 0,
+  Spring: 1,
+  Summer: 2,
+  Autumn: 3,
+};
 
 export function Collection() {
   const [location] = useLocation();
@@ -57,16 +64,20 @@ export function Collection() {
     switch (sortOption) {
       case "category-asc":
         return arr.sort((a, b) => a.category.localeCompare(b.category));
-      case "month-desc":
+      case "season-desc":
         return arr.sort((a, b) => {
-          const aVal = (a.pickYear ?? 0) * 12 + (a.pickMonth ?? 0);
-          const bVal = (b.pickYear ?? 0) * 12 + (b.pickMonth ?? 0);
+          const aSeason = (a as any).pickSeason ?? "";
+          const bSeason = (b as any).pickSeason ?? "";
+          const aVal = (a.pickYear ?? 0) * 10 + (SEASON_ORDER[aSeason] ?? 99);
+          const bVal = (b.pickYear ?? 0) * 10 + (SEASON_ORDER[bSeason] ?? 99);
           return bVal - aVal;
         });
-      case "month-asc":
+      case "season-asc":
         return arr.sort((a, b) => {
-          const aVal = (a.pickYear ?? 0) * 12 + (a.pickMonth ?? 0);
-          const bVal = (b.pickYear ?? 0) * 12 + (b.pickMonth ?? 0);
+          const aSeason = (a as any).pickSeason ?? "";
+          const bSeason = (b as any).pickSeason ?? "";
+          const aVal = (a.pickYear ?? 0) * 10 + (SEASON_ORDER[aSeason] ?? 99);
+          const bVal = (b.pickYear ?? 0) * 10 + (SEASON_ORDER[bSeason] ?? 99);
           return aVal - bVal;
         });
       case "price-asc":
@@ -150,8 +161,8 @@ export function Collection() {
                       <SelectContent className="rounded-none">
                         <SelectItem value="default">Default</SelectItem>
                         <SelectItem value="category-asc">Category (A–Z)</SelectItem>
-                        <SelectItem value="month-desc">Month (Newest first)</SelectItem>
-                        <SelectItem value="month-asc">Month (Oldest first)</SelectItem>
+                        <SelectItem value="season-desc">Season (Newest first)</SelectItem>
+                        <SelectItem value="season-asc">Season (Oldest first)</SelectItem>
                         <SelectItem value="price-asc">Price (Low to high)</SelectItem>
                         <SelectItem value="price-desc">Price (High to low)</SelectItem>
                       </SelectContent>
@@ -162,7 +173,7 @@ export function Collection() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-16">
               {sortedProperties.map((property) => (
-                <PropertyCard key={property.id} property={property} showCategory showMonthBadge />
+                <PropertyCard key={property.id} property={property} showCategory showSeasonBadge />
               ))}
             </div>
           </div>
