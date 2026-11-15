@@ -175,6 +175,7 @@ export function AdminDashboard() {
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [uploadingImages, setUploadingImages] = useState(false);
   const [pendingImages, setPendingImages] = useState<string[]>([]);
+  const [imageUrlsText, setImageUrlsText] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ── Queries ──
@@ -245,6 +246,7 @@ export function AdminDashboard() {
     setEditingId(null);
     setForm(defaultForm);
     setPendingImages([]);
+    setImageUrlsText("");
     setDialogOpen(true);
   };
 
@@ -266,6 +268,7 @@ export function AdminDashboard() {
       pickYear: String(property.pickYear ?? CURRENT_YEAR),
     });
     setPendingImages(property.images ?? []);
+    setImageUrlsText((property.images ?? []).join("\n"));
     setDialogOpen(true);
   };
 
@@ -292,6 +295,13 @@ export function AdminDashboard() {
 
   // ── Submit ──
   const handleSubmit = () => {
+    // Merge uploaded images + any URLs typed in the textarea (deduplicated, preserving order)
+    const urlImages = imageUrlsText
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const merged = Array.from(new Set([...pendingImages, ...urlImages]));
+
     const parsedData = {
       name: form.name,
       category: form.category,
@@ -306,7 +316,7 @@ export function AdminDashboard() {
       featured: form.featured,
       pickSeason: form.pickSeason || null,
       pickYear: form.pickYear ? parseInt(form.pickYear, 10) : null,
-      images: pendingImages,
+      images: merged,
     };
 
     if (editingId !== null) {
@@ -615,46 +625,70 @@ export function AdminDashboard() {
               </div>
 
               {/* Images */}
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <Label>Images</Label>
-                {pendingImages.length > 0 && (
-                  <div className="grid grid-cols-3 gap-2">
-                    {pendingImages.map((url, idx) => (
-                      <div key={idx} className="relative aspect-video bg-muted overflow-hidden">
-                        <img
-                          src={url.startsWith("http") ? url : `https://workspaceapi-server-production-3677.up.railway.app${url}`}
-                          alt=""
-                          className="object-cover w-full h-full"
-                        />
-                        <button
-                          onClick={() => handleRemoveImage(idx)}
-                          className="absolute top-1 right-1 bg-black/60 text-white rounded-full w-5 h-5 flex items-center justify-center"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </div>
-                    ))}
+
+                {/* URL input */}
+                <div className="space-y-1.5">
+                  <p className="text-xs text-muted-foreground">Image URLs (one per line — first is the main image)</p>
+                  <textarea
+                    value={imageUrlsText}
+                    onChange={(e) => setImageUrlsText(e.target.value)}
+                    placeholder={"https://example.com/image1.jpg\nhttps://example.com/image2.jpg"}
+                    rows={4}
+                    className="w-full rounded-none border border-input bg-background px-3 py-2 text-sm font-mono resize-y focus:outline-none focus:ring-1 focus:ring-ring"
+                  />
+                </div>
+
+                {/* Upload button */}
+                <div className="space-y-1.5">
+                  <p className="text-xs text-muted-foreground">Or upload images directly</p>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => e.target.files && handleImageFiles(e.target.files)}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={uploadingImages}
+                    onClick={() => fileInputRef.current?.click()}
+                    className="gap-2 text-xs"
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    {uploadingImages ? "Uploading…" : "Upload Images"}
+                  </Button>
+                </div>
+
+                {/* Preview — uploaded images only (URL images are shown as-typed above) */}
+                {pendingImages.filter((u) => !u.startsWith("http")).length > 0 && (
+                  <div className="space-y-1.5">
+                    <p className="text-xs text-muted-foreground">Uploaded images</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {pendingImages
+                        .filter((u) => !u.startsWith("http"))
+                        .map((url, idx) => (
+                          <div key={idx} className="relative aspect-video bg-muted overflow-hidden">
+                            <img
+                              src={`https://workspaceapi-server-production-3677.up.railway.app${url}`}
+                              alt=""
+                              className="object-cover w-full h-full"
+                            />
+                            <button
+                              onClick={() => handleRemoveImage(pendingImages.indexOf(url))}
+                              className="absolute top-1 right-1 bg-black/60 text-white rounded-full w-5 h-5 flex items-center justify-center"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                    </div>
                   </div>
                 )}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  className="hidden"
-                  onChange={(e) => e.target.files && handleImageFiles(e.target.files)}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={uploadingImages}
-                  onClick={() => fileInputRef.current?.click()}
-                  className="gap-2 text-xs"
-                >
-                  <Upload className="w-3.5 h-3.5" />
-                  {uploadingImages ? "Uploading…" : "Upload Images"}
-                </Button>
               </div>
 
               {/* Submit */}
