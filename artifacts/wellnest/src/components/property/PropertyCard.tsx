@@ -1,202 +1,91 @@
-import { Router, type IRouter } from "express";
-import { eq, desc } from "drizzle-orm";
-import { db, propertiesTable, newsletterSubscribersTable } from "@workspace/db";
-import {
-  AdminLoginBody,
-  AdminLoginResponse,
-  AdminMeResponse,
-  CreatePropertyBody,
-  UpdatePropertyBody,
-  UpdatePropertyParams,
-  DeletePropertyParams,
-} from "@workspace/api-zod";
-import type { Request, Response } from "express";
+import { Link } from "wouter";
+import { MapPin, Users, Star } from "lucide-react";
 
-declare module "express-session" {
-  interface SessionData {
-    adminAuthenticated?: boolean;
-  }
+interface Property {
+  id: number;
+  name: string;
+  category: string;
+  location: string;
+  nightlyPrice: number;
+  guests: number;
+  facilities: string[];
+  contactEmail: string;
+  websiteUrl: string | null;
+  instagramHandle: string | null;
+  images: string[];
+  description: string | null;
+  featured: boolean;
+  pickYear?: number | null;
+  [key: string]: unknown;
 }
 
-const router: IRouter = Router();
-
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "wellnest2024";
-
-function requireAdmin(req: Request, res: Response): boolean {
-  if (!req.session?.adminAuthenticated) {
-    res.status(401).json({ error: "Unauthorized" });
-    return false;
-  }
-  return true;
+interface PropertyCardProps {
+  property: Property;
+  showCategory?: boolean;
+  showSeasonBadge?: boolean;
 }
 
-router.post("/admin/login", async (req, res): Promise<void> => {
-  const parsed = AdminLoginBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
+export function PropertyCard({ property, showCategory, showSeasonBadge }: PropertyCardProps) {
+  const mainImage = property.images?.[0]
+    ? property.images[0].startsWith("http")
+      ? property.images[0]
+      : `https://workspaceapi-server-production-3677.up.railway.app${property.images[0]}`
+    : "/images/property-placeholder.png";
 
-  if (parsed.data.password !== ADMIN_PASSWORD) {
-    res.status(401).json({ error: "Invalid password" });
-    return;
-  }
+  const isPick =
+    property.category === "Pick of the Season" ||
+    property.category === "Pick of the Month";
 
-  req.session.adminAuthenticated = true;
-  res.json(AdminLoginResponse.parse({ success: true, message: "Logged in" }));
-});
+  const pickSeason = property.pickSeason as string | null | undefined;
+  const pickYear = property.pickYear as number | null | undefined;
 
-router.post("/admin/logout", async (req, res): Promise<void> => {
-  req.session.destroy(() => {
-    res.json({ success: true });
-  });
-});
+  const seasonBadgeText =
+    showSeasonBadge && pickSeason && pickYear
+      ? `${pickSeason} ${pickYear}`
+      : null;
 
-router.get("/admin/me", async (req, res): Promise<void> => {
-  const authenticated = req.session?.adminAuthenticated === true;
-  res.json(AdminMeResponse.parse({ authenticated }));
-});
-
-router.get("/admin/properties", async (req, res): Promise<void> => {
-  if (!requireAdmin(req, res)) return;
-
-  const properties = await db
-    .select()
-    .from(propertiesTable)
-    .orderBy(propertiesTable.pickYear, propertiesTable.pickSeason, propertiesTable.category);
-
-  const result = properties.map((p) => ({
-    ...p,
-    nightlyPrice: parseFloat(p.nightlyPrice),
-    createdAt: p.createdAt.toISOString(),
-    updatedAt: p.updatedAt.toISOString(),
-  }));
-
-  res.json(result);
-});
-
-router.post("/admin/properties", async (req, res): Promise<void> => {
-  if (!requireAdmin(req, res)) return;
-
-  const parsed = CreatePropertyBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
-
-  const body = req.body as any;
-
-  const [property] = await db
-    .insert(propertiesTable)
-    .values({
-      name: parsed.data.name,
-      category: parsed.data.category,
-      location: parsed.data.location,
-      nightlyPrice: String(parsed.data.nightlyPrice),
-      guests: parsed.data.guests,
-      facilities: parsed.data.facilities,
-      contactEmail: parsed.data.contactEmail,
-      websiteUrl: parsed.data.websiteUrl ?? null,
-      instagramHandle: parsed.data.instagramHandle ?? null,
-      images: parsed.data.images,
-      description: parsed.data.description ?? null,
-      featured: parsed.data.featured ?? false,
-      pickSeason: body.pickSeason ?? null,
-      pickYear: parsed.data.pickYear,
-    })
-    .returning();
-
-  res.status(201).json({
-    ...property,
-    nightlyPrice: parseFloat(property.nightlyPrice),
-    createdAt: property.createdAt.toISOString(),
-    updatedAt: property.updatedAt.toISOString(),
-  });
-});
-
-router.patch("/admin/properties/:id", async (req, res): Promise<void> => {
-  if (!requireAdmin(req, res)) return;
-
-  const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-  const params = UpdatePropertyParams.safeParse({ id: parseInt(rawId, 10) });
-  if (!params.success) {
-    res.status(400).json({ error: params.error.message });
-    return;
-  }
-
-  const parsed = UpdatePropertyBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
-
-  const body = req.body as any;
-
-  const updateData: Record<string, unknown> = { updatedAt: new Date() };
-  if (parsed.data.name !== undefined) updateData.name = parsed.data.name;
-  if (parsed.data.category !== undefined) updateData.category = parsed.data.category;
-  if (parsed.data.location !== undefined) updateData.location = parsed.data.location;
-  if (parsed.data.nightlyPrice !== undefined) updateData.nightlyPrice = String(parsed.data.nightlyPrice);
-  if (parsed.data.guests !== undefined) updateData.guests = parsed.data.guests;
-  if (parsed.data.facilities !== undefined) updateData.facilities = parsed.data.facilities;
-  if (parsed.data.contactEmail !== undefined) updateData.contactEmail = parsed.data.contactEmail;
-  if (parsed.data.websiteUrl !== undefined) updateData.websiteUrl = parsed.data.websiteUrl;
-  if (parsed.data.instagramHandle !== undefined) updateData.instagramHandle = parsed.data.instagramHandle;
-  if (parsed.data.images !== undefined) updateData.images = parsed.data.images;
-  if (parsed.data.description !== undefined) updateData.description = parsed.data.description;
-  if (parsed.data.featured !== undefined) updateData.featured = parsed.data.featured;
-  if (body.pickSeason !== undefined) updateData.pickSeason = body.pickSeason;
-  if (parsed.data.pickYear !== undefined) updateData.pickYear = parsed.data.pickYear;
-
-  const [property] = await db
-    .update(propertiesTable)
-    .set(updateData)
-    .where(eq(propertiesTable.id, params.data.id))
-    .returning();
-
-  if (!property) {
-    res.status(404).json({ error: "Property not found" });
-    return;
-  }
-
-  res.json({
-    ...property,
-    nightlyPrice: parseFloat(property.nightlyPrice),
-    createdAt: property.createdAt.toISOString(),
-    updatedAt: property.updatedAt.toISOString(),
-  });
-});
-
-router.delete("/admin/properties/:id", async (req, res): Promise<void> => {
-  if (!requireAdmin(req, res)) return;
-
-  const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-  const params = DeletePropertyParams.safeParse({ id: parseInt(rawId, 10) });
-  if (!params.success) {
-    res.status(400).json({ error: params.error.message });
-    return;
-  }
-
-  const [property] = await db
-    .delete(propertiesTable)
-    .where(eq(propertiesTable.id, params.data.id))
-    .returning();
-
-  if (!property) {
-    res.status(404).json({ error: "Property not found" });
-    return;
-  }
-
-  res.sendStatus(204);
-});
-
-router.get("/admin/newsletter-subscribers", async (req, res): Promise<void> => {
-  if (!requireAdmin(req, res)) return;
-  const subscribers = await db
-    .select()
-    .from(newsletterSubscribersTable)
-    .orderBy(desc(newsletterSubscribersTable.createdAt));
-  res.json(subscribers);
-});
-
-export default router;
+  return (
+    <Link href={`/properties/${property.id}`} className="group block h-full">
+      <div className={`relative aspect-[4/3] overflow-hidden mb-4 bg-muted ${isPick ? "ring-2 ring-amber-700/35 ring-offset-2" : ""}`}>
+        <img src={mainImage} alt={property.name} className="object-cover w-full h-full transition-transform duration-700 ease-out group-hover:scale-105" />
+        <div className="absolute inset-0 bg-black/10 transition-opacity duration-300 group-hover:opacity-0" />
+        {isPick && (
+          <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-amber-900/90 backdrop-blur-sm px-3 py-2 text-[9px] font-semibold tracking-[0.18em] uppercase text-amber-100">
+            <Star className="w-3 h-3 fill-amber-300 text-amber-300" />
+            Pick of the Season
+          </div>
+        )}
+        {seasonBadgeText && (
+          <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2.5 py-1 text-[10px] font-medium tracking-widest uppercase text-foreground">
+            {seasonBadgeText}
+          </div>
+        )}
+      </div>
+      <div className="space-y-1.5">
+        {showCategory && !isPick && (
+          <p className="text-[10px] uppercase tracking-[0.2em] text-primary font-medium">{property.category}</p>
+        )}
+        {showCategory && isPick && (
+          <p className="text-[10px] uppercase tracking-[0.2em] text-amber-700 font-semibold">Pick of the Season</p>
+        )}
+        <div className="flex items-start justify-between gap-4">
+          <h3 className="font-serif text-xl font-medium leading-snug group-hover:text-primary transition-colors line-clamp-1">{property.name}</h3>
+          <div className="text-right whitespace-nowrap shrink-0">
+            <div className="text-xs text-muted-foreground font-normal">From</div>
+            <div className="font-sans text-sm font-medium">&pound;{property.nightlyPrice} <span className="text-muted-foreground font-normal">/nt</span></div>
+          </div>
+        </div>
+        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+          <div className="flex items-center gap-1 min-w-0">
+            <MapPin className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">{property.location}</span>
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
+            <Users className="w-3.5 h-3.5" />
+            <span>Up to {property.guests}</span>
+          </div>
+        </div>
+      </div>
+    </Link>
+  );
+}
