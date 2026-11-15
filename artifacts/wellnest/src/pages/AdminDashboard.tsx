@@ -93,7 +93,7 @@ const YEARS = Array.from({ length: 5 }, (_, i) => CURRENT_YEAR - 1 + i);
 
 const defaultForm: FormData = {
   name: "",
-  category: "Country House",
+  category: "Farmstay",
   location: "",
   nightlyPrice: "",
   guests: "",
@@ -174,7 +174,9 @@ export function AdminDashboard() {
   const [sortField, setSortField] = useState<SortField>("season");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [uploadingImages, setUploadingImages] = useState(false);
+  // pendingImages holds only server-side upload paths (non-http)
   const [pendingImages, setPendingImages] = useState<string[]>([]);
+  // imageUrlsText holds the raw textarea content for http:// image URLs
   const [imageUrlsText, setImageUrlsText] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -267,11 +269,11 @@ export function AdminDashboard() {
       pickSeason: (property as any).pickSeason ?? "Winter",
       pickYear: String(property.pickYear ?? CURRENT_YEAR),
     });
-    // Keep http URLs in the textarea; keep uploaded paths (non-http) in pendingImages
+    // http:// URLs go into the textarea; server upload paths go into pendingImages
     const httpImages = (property.images ?? []).filter((u) => u.startsWith("http"));
     const uploadedImages = (property.images ?? []).filter((u) => !u.startsWith("http"));
-    setPendingImages(uploadedImages);
     setImageUrlsText(httpImages.join("\n"));
+    setPendingImages(uploadedImages);
     setDialogOpen(true);
   };
 
@@ -285,26 +287,26 @@ export function AdminDashboard() {
         urls.push(url);
       }
       setPendingImages((prev) => [...prev, ...urls]);
-    } catch (e) {
-      alert("Image upload failed");
+    } catch {
+      alert("Image upload failed. Please try again.");
     } finally {
       setUploadingImages(false);
     }
   };
 
-  const handleRemoveImage = (idx: number) => {
+  const handleRemoveUploadedImage = (idx: number) => {
     setPendingImages((prev) => prev.filter((_, i) => i !== idx));
   };
 
   // ── Submit ──
   const handleSubmit = () => {
-    // URL images come from the textarea; uploaded images (non-http paths) from pendingImages
+    // URL textarea → array of trimmed non-empty lines
     const urlImages = imageUrlsText
       .split("\n")
       .map((s) => s.trim())
       .filter(Boolean);
-    // URL images first (preserve order from textarea), then any uploaded file paths
-    const merged = [...urlImages, ...pendingImages];
+    // Combine: URL images first (textarea order), then server-uploaded paths
+    const images = [...urlImages, ...pendingImages];
 
     const parsedData = {
       name: form.name,
@@ -320,7 +322,7 @@ export function AdminDashboard() {
       featured: form.featured,
       pickSeason: form.pickSeason || null,
       pickYear: form.pickYear ? parseInt(form.pickYear, 10) : null,
-      images: merged,
+      images,
     };
 
     if (editingId !== null) {
@@ -346,7 +348,9 @@ export function AdminDashboard() {
       p.featured ? "Yes" : "No",
       p.websiteUrl ?? "",
     ]);
-    const csv = [headers, ...rows].map((r) => r.map(String).map((v) => `"${v.replace(/"/g, '""')}"`).join(",")).join("\n");
+    const csv = [headers, ...rows]
+      .map((r) => r.map(String).map((v) => `"${v.replace(/"/g, '""')}"`).join(","))
+      .join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -355,6 +359,9 @@ export function AdminDashboard() {
     a.click();
     URL.revokeObjectURL(url);
   };
+
+  const isSaving = createMutation.isPending || updateMutation.isPending;
+  const saveError = (createMutation.error as Error)?.message ?? (updateMutation.error as Error)?.message ?? null;
 
   // ── Render ──
   return (
@@ -372,7 +379,11 @@ export function AdminDashboard() {
               <Download className="w-3.5 h-3.5" />
               Export CSV
             </Button>
-            <Button onClick={handleOpenCreate} size="sm" className="gap-2 text-xs rounded-none bg-foreground text-background hover:bg-foreground/85">
+            <Button
+              onClick={handleOpenCreate}
+              size="sm"
+              className="gap-2 text-xs rounded-none bg-foreground text-background hover:bg-foreground/85"
+            >
               <Plus className="w-3.5 h-3.5" />
               Add Property
             </Button>
@@ -397,39 +408,61 @@ export function AdminDashboard() {
               <thead>
                 <tr className="border-b border-border text-left">
                   {(["name", "category", "location", "season", "nightlyPrice"] as SortField[]).map((field) => (
-                    <th key={field} className="pb-3 pr-6 font-medium text-xs uppercase tracking-wider text-muted-foreground">
-                      <button onClick={() => handleSort(field)} className="flex items-center gap-1 hover:text-foreground transition-colors">
+                    <th
+                      key={field}
+                      className="pb-3 pr-6 font-medium text-xs uppercase tracking-wider text-muted-foreground"
+                    >
+                      <button
+                        onClick={() => handleSort(field)}
+                        className="flex items-center gap-1 hover:text-foreground transition-colors"
+                      >
                         {field === "nightlyPrice" ? "Price" : field.charAt(0).toUpperCase() + field.slice(1)}
                         <ArrowUpDown className="w-3 h-3" />
                       </button>
                     </th>
                   ))}
-                  <th className="pb-3 pr-6 font-medium text-xs uppercase tracking-wider text-muted-foreground">Featured</th>
-                  <th className="pb-3 font-medium text-xs uppercase tracking-wider text-muted-foreground">Actions</th>
+                  <th className="pb-3 pr-6 font-medium text-xs uppercase tracking-wider text-muted-foreground">
+                    Featured
+                  </th>
+                  <th className="pb-3 font-medium text-xs uppercase tracking-wider text-muted-foreground">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {sortedProperties.map((property) => {
                   const pickSeason = (property as any).pickSeason as string | null;
                   return (
-                    <tr key={property.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+                    <tr
+                      key={property.id}
+                      className="border-b border-border/50 hover:bg-muted/30 transition-colors"
+                    >
                       <td className="py-4 pr-6 font-medium">{property.name}</td>
                       <td className="py-4 pr-6 text-muted-foreground">{property.category}</td>
                       <td className="py-4 pr-6 text-muted-foreground">{property.location}</td>
                       <td className="py-4 pr-6">
                         {pickSeason && property.pickYear ? (
-                          <span className="text-xs font-medium">{pickSeason} {property.pickYear}</span>
+                          <span className="text-xs font-medium">
+                            {pickSeason} {property.pickYear}
+                          </span>
                         ) : (
                           <span className="text-muted-foreground italic text-xs">Unassigned</span>
                         )}
                       </td>
                       <td className="py-4 pr-6 text-muted-foreground">£{property.nightlyPrice}/nt</td>
                       <td className="py-4 pr-6">
-                        {property.featured && <Badge variant="secondary" className="text-xs">Featured</Badge>}
+                        {property.featured && (
+                          <Badge variant="secondary" className="text-xs">Featured</Badge>
+                        )}
                       </td>
                       <td className="py-4">
                         <div className="flex items-center gap-2">
-                          <Button variant="ghost" size="sm" onClick={() => handleOpenEdit(property)} className="h-8 w-8 p-0">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleOpenEdit(property)}
+                            className="h-8 w-8 p-0"
+                          >
                             <Pencil className="w-3.5 h-3.5" />
                           </Button>
                           <Button
@@ -467,7 +500,9 @@ export function AdminDashboard() {
 
               {/* Seasonal Assignment */}
               <div className="p-5 border border-border/60 bg-muted/20 space-y-4">
-                <p className="text-xs uppercase tracking-widest text-muted-foreground font-medium">Seasonal Assignment</p>
+                <p className="text-xs uppercase tracking-widest text-muted-foreground font-medium">
+                  Seasonal Assignment
+                </p>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Season</Label>
@@ -577,7 +612,10 @@ export function AdminDashboard() {
 
               {/* Facilities */}
               <div className="space-y-2">
-                <Label>Facilities <span className="text-muted-foreground font-normal">(comma-separated)</span></Label>
+                <Label>
+                  Facilities{" "}
+                  <span className="text-muted-foreground font-normal">(comma-separated)</span>
+                </Label>
                 <Input
                   value={form.facilities}
                   onChange={(e) => setForm((f) => ({ ...f, facilities: e.target.value }))}
@@ -632,19 +670,21 @@ export function AdminDashboard() {
               <div className="space-y-4">
                 <Label>Images</Label>
 
-                {/* URL input */}
+                {/* URL textarea */}
                 <div className="space-y-1.5">
-                  <p className="text-xs text-muted-foreground">Image URLs (one per line — first is the main image)</p>
+                  <p className="text-xs text-muted-foreground">
+                    Image URLs — one per line, first line is the main image
+                  </p>
                   <textarea
                     value={imageUrlsText}
                     onChange={(e) => setImageUrlsText(e.target.value)}
                     placeholder={"https://example.com/image1.jpg\nhttps://example.com/image2.jpg"}
                     rows={4}
-                    className="w-full rounded-none border border-input bg-background px-3 py-2 text-sm font-mono resize-y focus:outline-none focus:ring-1 focus:ring-ring"
+                    className="w-full border border-input bg-background px-3 py-2 text-sm font-mono resize-y focus:outline-none focus:ring-1 focus:ring-ring"
                   />
                 </div>
 
-                {/* Upload button */}
+                {/* Upload */}
                 <div className="space-y-1.5">
                   <p className="text-xs text-muted-foreground">Or upload images directly</p>
                   <input
@@ -668,52 +708,57 @@ export function AdminDashboard() {
                   </Button>
                 </div>
 
-                {/* Preview — uploaded images only (URL images are shown as-typed above) */}
-                {pendingImages.filter((u) => !u.startsWith("http")).length > 0 && (
+                {/* Uploaded file previews */}
+                {pendingImages.length > 0 && (
                   <div className="space-y-1.5">
                     <p className="text-xs text-muted-foreground">Uploaded images</p>
                     <div className="grid grid-cols-3 gap-2">
-                      {pendingImages
-                        .filter((u) => !u.startsWith("http"))
-                        .map((url, idx) => (
-                          <div key={idx} className="relative aspect-video bg-muted overflow-hidden">
-                            <img
-                              src={`https://workspaceapi-server-production-3677.up.railway.app${url}`}
-                              alt=""
-                              className="object-cover w-full h-full"
-                            />
-                            <button
-                              onClick={() => handleRemoveImage(pendingImages.indexOf(url))}
-                              className="absolute top-1 right-1 bg-black/60 text-white rounded-full w-5 h-5 flex items-center justify-center"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                          </div>
-                        ))}
+                      {pendingImages.map((url, idx) => (
+                        <div key={idx} className="relative aspect-video bg-muted overflow-hidden">
+                          <img
+                            src={
+                              url.startsWith("http")
+                                ? url
+                                : `https://workspaceapi-server-production-3677.up.railway.app${url}`
+                            }
+                            alt=""
+                            className="object-cover w-full h-full"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveUploadedImage(idx)}
+                            className="absolute top-1 right-1 bg-black/60 text-white rounded-full w-5 h-5 flex items-center justify-center"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
               </div>
 
+              {/* Error */}
+              {saveError && (
+                <p className="text-sm text-destructive border border-destructive/30 bg-destructive/5 px-3 py-2">
+                  {saveError}
+                </p>
+              )}
+
               {/* Submit */}
               <div className="flex justify-end gap-3 pt-2 border-t border-border">
-                <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
+                <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                  Cancel
+                </Button>
                 <Button
                   onClick={handleSubmit}
-                  disabled={createMutation.isPending || updateMutation.isPending}
+                  disabled={isSaving}
                   className="rounded-none bg-foreground text-background hover:bg-foreground/85"
                 >
-                  {createMutation.isPending || updateMutation.isPending
-                    ? "Saving…"
-                    : editingId ? "Save Changes" : "Add Property"}
+                  {isSaving ? "Saving…" : editingId ? "Save Changes" : "Add Property"}
                 </Button>
               </div>
 
-              {(createMutation.error || updateMutation.error) && (
-                <p className="text-sm text-destructive">
-                  {(createMutation.error as Error)?.message ?? (updateMutation.error as Error)?.message}
-                </p>
-              )}
             </div>
           </DialogContent>
         </Dialog>
