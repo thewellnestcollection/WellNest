@@ -267,8 +267,11 @@ export function AdminDashboard() {
       pickSeason: (property as any).pickSeason ?? "Winter",
       pickYear: String(property.pickYear ?? CURRENT_YEAR),
     });
-    setPendingImages(property.images ?? []);
-    setImageUrlsText((property.images ?? []).join("\n"));
+    // Keep http URLs in the textarea; keep uploaded paths (non-http) in pendingImages
+    const httpImages = (property.images ?? []).filter((u) => u.startsWith("http"));
+    const uploadedImages = (property.images ?? []).filter((u) => !u.startsWith("http"));
+    setPendingImages(uploadedImages);
+    setImageUrlsText(httpImages.join("\n"));
     setDialogOpen(true);
   };
 
@@ -295,12 +298,13 @@ export function AdminDashboard() {
 
   // ── Submit ──
   const handleSubmit = () => {
-    // Merge uploaded images + any URLs typed in the textarea (deduplicated, preserving order)
+    // URL images come from the textarea; uploaded images (non-http paths) from pendingImages
     const urlImages = imageUrlsText
       .split("\n")
       .map((s) => s.trim())
       .filter(Boolean);
-    const merged = Array.from(new Set([...pendingImages, ...urlImages]));
+    // URL images first (preserve order from textarea), then any uploaded file paths
+    const merged = [...urlImages, ...pendingImages];
 
     const parsedData = {
       name: form.name,
