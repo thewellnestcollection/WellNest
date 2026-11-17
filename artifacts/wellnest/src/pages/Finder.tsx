@@ -31,8 +31,8 @@ interface Property {
   guests: number;
   images: string[];
   description: string | null;
-  pickMonth: number | null;
-  pickYear: number | null;
+  pick_season: string | null;
+  pick_year: number | null;
   featured: boolean;
   websiteUrl: string | null;
   instagramHandle: string | null;
@@ -111,8 +111,8 @@ function matchCategories(answers: Answers): string[] {
     cats.push("Estate/Manor");
   }
 
-  // Always include Pick of the Month
-  cats.push("Pick of the Month");
+  // Always include Pick of the Season
+  cats.push("Pick of the Season");
 
   return [...new Set(cats)];
 }
@@ -195,7 +195,9 @@ export function Finder() {
   });
   const [email, setEmail] = useState("");
   const [firstName, setFirstName] = useState("");
+  const [consentGiven, setConsentGiven] = useState(false);
   const [emailError, setEmailError] = useState("");
+  const [consentError, setConsentError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<Property[]>([]);
   const [submitError, setSubmitError] = useState("");
@@ -233,10 +235,16 @@ export function Finder() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setEmailError("");
+    setConsentError("");
     setSubmitError("");
 
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       setEmailError("Please enter a valid email address.");
+      return;
+    }
+
+    if (!consentGiven) {
+      setConsentError("Please tick the box to continue — this is required.");
       return;
     }
 
@@ -259,6 +267,8 @@ export function Finder() {
           budgetMax,
           mustHaves: answers.mustHaves,
           matchedCategories,
+          consentGiven: true,
+          consentAt: new Date().toISOString(),
         }),
       });
 
@@ -501,6 +511,23 @@ export function Finder() {
                 {emailError && <p className="text-destructive text-xs mt-1">{emailError}</p>}
               </div>
 
+              {/* GDPR consent checkbox */}
+              <div className={cn("flex items-start gap-3 p-4 border", consentError ? "border-destructive/50 bg-destructive/5" : "border-border bg-white")}>
+                <input
+                  type="checkbox"
+                  id="consent"
+                  checked={consentGiven}
+                  onChange={(e) => { setConsentGiven(e.target.checked); setConsentError(""); }}
+                  className="mt-0.5 h-4 w-4 cursor-pointer accent-foreground flex-shrink-0"
+                />
+                <label htmlFor="consent" className="text-xs text-muted-foreground leading-relaxed cursor-pointer">
+                  I agree to receive my personalised results and occasional updates about new WellNest properties by email.
+                  You can unsubscribe at any time. By ticking this box, you consent to WellNest storing your email address for this purpose.{" "}
+                  <a href="/privacy" className="underline underline-offset-2 hover:text-foreground transition-colors">Privacy policy</a>.
+                </label>
+              </div>
+              {consentError && <p className="text-destructive text-xs -mt-2">{consentError}</p>}
+
               {submitError && (
                 <p className="text-destructive text-sm">{submitError}</p>
               )}
@@ -578,6 +605,7 @@ export function Finder() {
                       setAnswers({ experience: null, location: null, style: null, guests: null, budget: null, mustHaves: [] });
                       setEmail("");
                       setFirstName("");
+                      setConsentGiven(false);
                       setResults([]);
                     }}
                     className="text-xs text-muted-foreground underline underline-offset-2"
