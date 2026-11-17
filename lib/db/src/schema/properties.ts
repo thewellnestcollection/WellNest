@@ -38,26 +38,6 @@ export const insertSubscriberSchema = createInsertSchema(newsletterSubscribersTa
 export type InsertSubscriber = z.infer<typeof insertSubscriberSchema>;
 export type NewsletterSubscriber = typeof newsletterSubscribersTable.$inferSelect;
 
-// WellNest Finder — quiz submissions with email gate
-export const finderSubmissionsTable = pgTable("finder_submissions", {
-  id: serial("id").primaryKey(),
-  email: text("email").notNull(),
-  firstName: text("first_name"),
-  experience: text("experience").notNull(),       // e.g. "rest", "adventure", "romance", "family", "solo"
-  location: text("location").notNull(),            // e.g. "countryside", "coast", "woodland", "village", "remote"
-  style: text("style").notNull(),                  // e.g. "rustic", "modern", "historic", "eco"
-  guests: integer("guests").notNull(),             // number of guests
-  budgetMin: integer("budget_min"),
-  budgetMax: integer("budget_max"),
-  mustHaves: jsonb("must_haves").$type<string[]>().notNull().default([]),
-  matchedCategories: jsonb("matched_categories").$type<string[]>().notNull().default([]),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
-
-export const insertFinderSubmissionSchema = createInsertSchema(finderSubmissionsTable).omit({ id: true, createdAt: true });
-export type InsertFinderSubmission = z.infer<typeof insertFinderSubmissionSchema>;
-export type FinderSubmission = typeof finderSubmissionsTable.$inferSelect;
-
 // Offer alerts — offer details scraped/parsed from hotel newsletters
 export const offersTable = pgTable("offers", {
   id: serial("id").primaryKey(),
@@ -85,7 +65,7 @@ export const offerAlertSubscribersTable = pgTable("offer_alert_subscribers", {
   id: serial("id").primaryKey(),
   email: text("email").notNull().unique(),
   firstName: text("first_name"),
-  categories: jsonb("categories").$type<string[]>().notNull().default([]), // [] = all categories
+  categories: jsonb("categories").$type<string[]>().notNull().default([]),
   active: boolean("active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
