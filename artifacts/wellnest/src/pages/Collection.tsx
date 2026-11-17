@@ -28,7 +28,7 @@ export function Collection() {
   const [location] = useLocation();
   const searchParams = new URLSearchParams(window.location.search);
   const initialCategory = searchParams.get("category") || undefined;
-  
+
   const [category, setCategory] = useState<string | undefined>(initialCategory);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOption, setSortOption] = useState<SortOption>("default");
@@ -41,7 +41,14 @@ export function Collection() {
   }, [location]);
 
   const { data: categories = [] } = useGetPropertyCategories();
-  
+
+  // Pin "Pick of the Season" immediately after "All Stays"
+  const orderedCategories = useMemo(() => {
+    const picks = categories.filter((c) => c === "Pick of the Season");
+    const rest = categories.filter((c) => c !== "Pick of the Season");
+    return [...picks, ...rest];
+  }, [categories]);
+
   const { data: properties, isLoading } = useListProperties({
     category,
     search: debouncedSearch || undefined,
@@ -104,10 +111,10 @@ export function Collection() {
       {/* Filters */}
       <div className="sticky top-40 z-40 bg-background/95 backdrop-blur-sm border-b py-4 shadow-sm">
         <div className="container mx-auto px-4 md:px-6">
-          <CategoryFilter 
-            categories={categories} 
-            activeCategory={category} 
-            onSelectCategory={handleCategoryChange} 
+          <CategoryFilter
+            categories={orderedCategories}
+            activeCategory={category}
+            onSelectCategory={handleCategoryChange}
           />
         </div>
       </div>
