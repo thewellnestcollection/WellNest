@@ -10,7 +10,7 @@ interface CategoryFilterProps {
 }
 
 const CATEGORY_ORDER = [
-  "Pick of the Month",
+  "Pick of the Season",
   "Farmstay",
   "Unique Stay",
   "Cabin/hut",
@@ -40,7 +40,7 @@ export function CategoryFilter({ categories, activeCategory, onSelectCategory }:
           All Stays
         </Button>
         {sorted.map((cat) => {
-          const isPick = cat.category === "Pick of the Month";
+          const isPick = cat.category === "Pick of the Season";
           const isActive = activeCategory === cat.category;
           return (
             <Button
