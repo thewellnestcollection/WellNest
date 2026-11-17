@@ -1,26 +1,10 @@
-/**
- * artifacts/api-server/src/routes/finder.ts
- *
- * POST /api/finder/submit
- *   - Saves the submission to finder_submissions
- *   - Queries properties whose category matches one of matchedCategories
- *     and whose nightly_price falls within budget (if provided)
- *   - Returns { properties: Property[], submissionId: number }
- *
- * To register in index.ts, add:
- *   import finderRouter from "./routes/finder.js";
- *   app.use("/api/finder", finderRouter);
- */
-
-import { Router } from "express";
-import { db } from "../db.js"; // adjust import path if yours differs
-import { properties, finderSubmissions } from "../db/schema.js"; // adjust if yours differs
-import { inArray, gte, lte, and, or, sql } from "drizzle-orm";
+import { Router, type IRouter } from "express";
+import { db, propertiesTable, finderSubmissionsTable } from "@workspace/db";
+import { inArray, gte, and, sql } from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
 import { z } from "zod";
 
-const router = Router();
-
-// ── Validation schema ────────────────────────────────────────────────────────
+const router: IRouter = Router();
 
 const submitSchema = z.object({
   email: z.string().email(),
@@ -37,12 +21,11 @@ const submitSchema = z.object({
   consentAt: z.string().datetime().optional(),
 });
 
-// ── POST /api/finder/submit ───────────────────────────────────────────────────
-
-router.post("/submit", async (req, res) => {
+router.post("/submit", async (req, res): Promise<void> => {
   const parsed = submitSchema.safeParse(req.body);
   if (!parsed.success) {
-    return res.status(400).json({ error: "Invalid request", details: parsed.error.flatten() });
+    res.status(400).json({ error: "Invalid request", details: parsed.error.flatten() });
+    return;
   }
 
   const {
@@ -61,61 +44,62 @@ router.post("/submit", async (req, res) => {
   } = parsed.data;
 
   try {
-    // 1. Save submission
     const [submission] = await db
-      .insert(finderSubmissions)
+      .insert(finderSubmissionsTable)
       .values({
         email,
-        first_name: firstName ?? null,
+        firstName: firstName ?? null,
         experience,
         location,
         style,
         guests,
-        budget_min: budgetMin ?? null,
-        budget_max: budgetMax ?? null,
-        must_haves: mustHaves,
-        matched_categories: matchedCategories,
-        consent_given: consentGiven,
-        consent_at: consentAt ? new Date(consentAt) : new Date(),
+        budgetMin: budgetMin ?? null,
+        budgetMax: budgetMax ?? null,
+        mustHaves,
+        matchedCategories,
+        consentGiven,
+        consentAt: consentAt ? new Date(consentAt) : new Date(),
       })
-      .returning({ id: finderSubmissions.id });
+      .returning({ id: finderSubmissionsTable.id });
 
-    // 2. Query matching properties
-    //    - category must be in matchedCategories
-    //    - nightly_price within budget range (if provided)
-    //    - guests capacity must be >= requested guests
-    const conditions = [
-      inArray(properties.category, matchedCategories),
+    const conditions: SQL[] = [
+      inArray(propertiesTable.category, matchedCategories),
     ];
 
     if (budgetMax !== undefined) {
-      conditions.push(lte(properties.nightly_price, budgetMax));
+      conditions.push(sql`${propertiesTable.nightlyPrice}::numeric <= ${budgetMax}`);
     }
     if (budgetMin !== undefined) {
-      conditions.push(gte(properties.nightly_price, budgetMin));
+      conditions.push(sql`${propertiesTable.nightlyPrice}::numeric >= ${budgetMin}`);
     }
     if (guests > 1) {
-      conditions.push(gte(properties.guests, guests));
+      conditions.push(gte(propertiesTable.guests, guests));
     }
 
     const matchedProperties = await db
       .select()
-      .from(properties)
+      .from(propertiesTable)
       .where(and(...conditions))
       .orderBy(
-        // Featured properties first, then by name
-        sql`${properties.featured} DESC`,
-        properties.name
+        sql`${propertiesTable.featured} DESC NULLS LAST`,
+        propertiesTable.name
       )
       .limit(12);
 
-    return res.json({
+    const result = matchedProperties.map((p) => ({
+      ...p,
+      nightlyPrice: parseFloat(p.nightlyPrice),
+      createdAt: p.createdAt.toISOString(),
+      updatedAt: p.updatedAt.toISOString(),
+    }));
+
+    res.json({
       submissionId: submission.id,
-      properties: matchedProperties,
+      properties: result,
     });
   } catch (err) {
     console.error("[finder/submit] error:", err);
-    return res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
