@@ -1,3 +1,5 @@
+// artifacts/api-server/src/routes/finder.ts
+
 import { Router, type IRouter } from "express";
 import { db, propertiesTable, finderSubmissionsTable } from "@workspace/db";
 import { inArray, gte, and, sql } from "drizzle-orm";
@@ -29,18 +31,8 @@ router.post("/submit", async (req, res): Promise<void> => {
   }
 
   const {
-    email,
-    firstName,
-    experience,
-    location,
-    style,
-    guests,
-    budgetMin,
-    budgetMax,
-    mustHaves,
-    matchedCategories,
-    consentGiven,
-    consentAt,
+    email, firstName, experience, location, style, guests,
+    budgetMin, budgetMax, mustHaves, matchedCategories, consentGiven, consentAt,
   } = parsed.data;
 
   try {
