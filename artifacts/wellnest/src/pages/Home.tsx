@@ -86,14 +86,10 @@ export function Home() {
 
   useEffect(() => {
     if (seasons.length === 0) return;
-    const match = seasons.find(
-      (s) => s.season === selectedSeason && s.year === selectedYear
-    );
-    if (!match) {
-      const last = seasons[seasons.length - 1];
-      setSelectedSeason(last.season as SeasonName);
-      setSelectedYear(last.year);
-    }
+    // Always default to the latest available season
+    const last = seasons[seasons.length - 1];
+    setSelectedSeason(last.season as SeasonName);
+    setSelectedYear(last.year);
   }, [seasons.map((s) => s.season + s.year).join(",")]);
 
   const { data: picks, isLoading: picksLoading } = useQuery({
@@ -152,7 +148,7 @@ export function Home() {
           </div>
         ) : (
           <div className="flex gap-1.5 flex-wrap mb-12">
-            {seasons.map((s) => {
+            {[...seasons].reverse().map((s) => {
               const isActive = s.season === selectedSeason && s.year === selectedYear;
               return (
                 <button
