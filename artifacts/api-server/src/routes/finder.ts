@@ -1,98 +1,122 @@
-import { Router, type IRouter } from "express";
+/**
+ * artifacts/api-server/src/routes/finder.ts
+ *
+ * POST /api/finder/submit
+ *   - Saves the submission to finder_submissions
+ *   - Queries properties whose category matches one of matchedCategories
+ *     and whose nightly_price falls within budget (if provided)
+ *   - Returns { properties: Property[], submissionId: number }
+ *
+ * To register in index.ts, add:
+ *   import finderRouter from "./routes/finder.js";
+ *   app.use("/api/finder", finderRouter);
+ */
+
+import { Router } from "express";
+import { db } from "../db.js"; // adjust import path if yours differs
+import { properties, finderSubmissions } from "../db/schema.js"; // adjust if yours differs
+import { inArray, gte, lte, and, or, sql } from "drizzle-orm";
 import { z } from "zod";
-import { db, finderSubmissionsTable, propertiesTable } from "@workspace/db";
-import { eq, or, and, gte, lte, sql } from "drizzle-orm";
 
-const router: IRouter = Router();
+const router = Router();
 
-const FinderSubmitBody = z.object({
+// ── Validation schema ────────────────────────────────────────────────────────
+
+const submitSchema = z.object({
   email: z.string().email(),
-  firstName: z.string().optional(),
-  experience: z.enum(["rest", "adventure", "romance", "family", "solo"]),
-  location: z.enum(["countryside", "coast", "woodland", "village", "remote"]),
-  style: z.enum(["rustic", "modern", "historic", "eco"]),
-  guests: z.number().int().min(1).max(20),
+  firstName: z.string().max(100).optional(),
+  experience: z.string(),
+  location: z.string(),
+  style: z.string(),
+  guests: z.number().int().min(1).max(50),
   budgetMin: z.number().int().optional(),
   budgetMax: z.number().int().optional(),
-  mustHaves: z.array(z.string()).default([]),
-  matchedCategories: z.array(z.string()).default([]),
+  mustHaves: z.array(z.string()),
+  matchedCategories: z.array(z.string()),
+  consentGiven: z.boolean(),
+  consentAt: z.string().datetime().optional(),
 });
 
-// POST /api/finder/submit — save quiz answers and return matching properties
-router.post("/finder/submit", async (req, res): Promise<void> => {
-  const body = FinderSubmitBody.safeParse(req.body);
-  if (!body.success) {
-    res.status(400).json({ error: body.error.message });
-    return;
+// ── POST /api/finder/submit ───────────────────────────────────────────────────
+
+router.post("/submit", async (req, res) => {
+  const parsed = submitSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid request", details: parsed.error.flatten() });
   }
 
-  const { email, firstName, experience, location, style, guests, budgetMin, budgetMax, mustHaves, matchedCategories } = body.data;
+  const {
+    email,
+    firstName,
+    experience,
+    location,
+    style,
+    guests,
+    budgetMin,
+    budgetMax,
+    mustHaves,
+    matchedCategories,
+    consentGiven,
+    consentAt,
+  } = parsed.data;
 
-  // Save submission (upsert by email — last quiz wins)
   try {
-    await db.insert(finderSubmissionsTable).values({
-      email,
-      firstName: firstName ?? null,
-      experience,
-      location,
-      style,
-      guests,
-      budgetMin: budgetMin ?? null,
-      budgetMax: budgetMax ?? null,
-      mustHaves,
-      matchedCategories,
+    // 1. Save submission
+    const [submission] = await db
+      .insert(finderSubmissions)
+      .values({
+        email,
+        first_name: firstName ?? null,
+        experience,
+        location,
+        style,
+        guests,
+        budget_min: budgetMin ?? null,
+        budget_max: budgetMax ?? null,
+        must_haves: mustHaves,
+        matched_categories: matchedCategories,
+        consent_given: consentGiven,
+        consent_at: consentAt ? new Date(consentAt) : new Date(),
+      })
+      .returning({ id: finderSubmissions.id });
+
+    // 2. Query matching properties
+    //    - category must be in matchedCategories
+    //    - nightly_price within budget range (if provided)
+    //    - guests capacity must be >= requested guests
+    const conditions = [
+      inArray(properties.category, matchedCategories),
+    ];
+
+    if (budgetMax !== undefined) {
+      conditions.push(lte(properties.nightly_price, budgetMax));
+    }
+    if (budgetMin !== undefined) {
+      conditions.push(gte(properties.nightly_price, budgetMin));
+    }
+    if (guests > 1) {
+      conditions.push(gte(properties.guests, guests));
+    }
+
+    const matchedProperties = await db
+      .select()
+      .from(properties)
+      .where(and(...conditions))
+      .orderBy(
+        // Featured properties first, then by name
+        sql`${properties.featured} DESC`,
+        properties.name
+      )
+      .limit(12);
+
+    return res.json({
+      submissionId: submission.id,
+      properties: matchedProperties,
     });
-  } catch (_e) {
-    // Non-fatal — still return results
+  } catch (err) {
+    console.error("[finder/submit] error:", err);
+    return res.status(500).json({ error: "Internal server error" });
   }
-
-  // Fetch current seasonal picks that match the categories
-  const now = new Date();
-  const month = now.getMonth() + 1;
-  const year = now.getFullYear();
-
-  // Get the last 3 months of picks so there's always something to show
-  const monthFilters: Array<{ month: number; year: number }> = [];
-  for (let i = 0; i < 3; i++) {
-    let m = month - i;
-    let y = year;
-    if (m <= 0) { m += 12; y -= 1; }
-    monthFilters.push({ month: m, year: y });
-  }
-
-  const orConds = monthFilters.map((f) =>
-    and(eq(propertiesTable.pickMonth, f.month), eq(propertiesTable.pickYear, f.year))
-  );
-
-  let dbQuery = db
-    .select()
-    .from(propertiesTable)
-    .where(sql`(${orConds.map((c) => sql`(${c})`).reduce((a, b) => sql`${a} OR ${b}`)})`)
-    .$dynamic();
-
-  const allPicks = await dbQuery.orderBy(propertiesTable.pickYear, propertiesTable.pickMonth, propertiesTable.category);
-
-  // Filter to matched categories, fall back to all if empty match
-  let matched = matchedCategories.length > 0
-    ? allPicks.filter((p) => matchedCategories.includes(p.category))
-    : allPicks;
-
-  if (matched.length === 0) matched = allPicks;
-
-  // Apply budget filter if provided
-  if (budgetMax) {
-    const budgetFiltered = matched.filter((p) => parseFloat(p.nightlyPrice) <= budgetMax);
-    if (budgetFiltered.length > 0) matched = budgetFiltered;
-  }
-
-  const result = matched.slice(0, 6).map((p) => ({
-    ...p,
-    nightlyPrice: parseFloat(p.nightlyPrice),
-    createdAt: p.createdAt.toISOString(),
-    updatedAt: p.updatedAt.toISOString(),
-  }));
-
-  res.json({ properties: result });
 });
 
 export default router;
