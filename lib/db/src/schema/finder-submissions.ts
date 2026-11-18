@@ -5,6 +5,7 @@ import {
   integer,
   boolean,
   timestamp,
+  jsonb,
 } from "drizzle-orm/pg-core";
 
 export const finderSubmissionsTable = pgTable("finder_submissions", {
@@ -17,8 +18,8 @@ export const finderSubmissionsTable = pgTable("finder_submissions", {
   guests: integer("guests"),
   budgetMin: integer("budget_min"),
   budgetMax: integer("budget_max"),
-  mustHaves: text("must_haves").array(),
-  matchedCategories: text("matched_categories").array(),
+  mustHaves: jsonb("must_haves").$type<string[]>(),
+  matchedCategories: jsonb("matched_categories").$type<string[]>(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   consentGiven: boolean("consent_given").notNull().default(false),
   consentAt: timestamp("consent_at", { withTimezone: true }),
