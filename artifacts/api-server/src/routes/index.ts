@@ -11,6 +11,6 @@ router.use(healthRouter);
 router.use(propertiesRouter);
 router.use(adminRouter);
 router.use(newsletterRouter);
-router.use(finderRouter);
+router.use("/finder", finderRouter);
 
 export default router;
