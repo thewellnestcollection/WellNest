@@ -109,14 +109,16 @@ const defaultForm: FormData = {
 
 // ─── API helpers ───────────────────────────────────────────────────────────────
 
+const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? "";
+
 async function fetchAdminProperties(): Promise<Property[]> {
-  const res = await fetch("/api/admin/properties", { credentials: "include" });
+  const res = await fetch(`${API_BASE}/api/admin/properties`, { credentials: "include" });
   if (!res.ok) throw new Error("Failed to fetch properties");
   return res.json();
 }
 
 async function createProperty(data: Record<string, unknown>): Promise<Property> {
-  const res = await fetch("/api/admin/properties", {
+  const res = await fetch(`${API_BASE}/api/admin/properties`, {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
@@ -130,7 +132,7 @@ async function createProperty(data: Record<string, unknown>): Promise<Property> 
 }
 
 async function updateProperty(id: number, data: Record<string, unknown>): Promise<Property> {
-  const res = await fetch(`/api/admin/properties/${id}`, {
+  const res = await fetch(`${API_BASE}/api/admin/properties/${id}`, {
     method: "PATCH",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
@@ -144,7 +146,7 @@ async function updateProperty(id: number, data: Record<string, unknown>): Promis
 }
 
 async function deleteProperty(id: number): Promise<void> {
-  const res = await fetch(`/api/admin/properties/${id}`, {
+  const res = await fetch(`${API_BASE}/api/admin/properties/${id}`, {
     method: "DELETE",
     credentials: "include",
   });
@@ -154,7 +156,7 @@ async function deleteProperty(id: number): Promise<void> {
 async function uploadImage(file: File): Promise<string> {
   const formData = new FormData();
   formData.append("image", file);
-  const res = await fetch("/api/admin/upload", {
+  const res = await fetch(`${API_BASE}/api/admin/upload`, {
     method: "POST",
     credentials: "include",
     body: formData,
@@ -719,7 +721,7 @@ export function AdminDashboard() {
                             src={
                               url.startsWith("http")
                                 ? url
-                                : `https://workspaceapi-server-production-3677.up.railway.app${url}`
+                                : `${API_BASE}${url}`
                             }
                             alt=""
                             className="object-cover w-full h-full"
