@@ -253,7 +253,7 @@ export function Finder() {
 
     setIsLoading(true);
     try {
-      const res = await fetch("/api/finder/submit", {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/finder/submit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
