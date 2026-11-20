@@ -3,6 +3,8 @@ import express, { type Express } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
 import session from "express-session";
+import connectPgSimple from "connect-pg-simple";
+import { Pool } from "pg";
 import router from "./routes";
 import { logger } from "./lib/logger";
 
@@ -31,15 +33,24 @@ app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+const PgSession = connectPgSimple(session);
+const pgPool = new Pool({ connectionString: process.env.DATABASE_URL });
+
 app.use(
   session({
+    store: new PgSession({
+      pool: pgPool,
+      tableName: "session",
+      createTableIfMissing: true,
+    }),
     secret: process.env.SESSION_SECRET ?? "wellnest-secret-key-change-in-prod",
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: false,
+      secure: true,
       httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000,
+      sameSite: "none",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     },
   }),
 );

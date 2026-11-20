@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
+import { Loader2 } from "lucide-react";
 
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -13,6 +14,32 @@ import { PropertyDetails } from "@/pages/PropertyDetails";
 import { AdminLogin } from "@/pages/AdminLogin";
 import { AdminDashboard } from "@/pages/AdminDashboard";
 import { Finder } from "@/pages/Finder";
+import { useAdminMe } from "@workspace/api-client-react";
+
+function ProtectedAdminRoute({ children }: { children: React.ReactNode }) {
+  const [, setLocation] = useLocation();
+  const { data: adminSession, isLoading } = useAdminMe();
+
+  useEffect(() => {
+    if (!isLoading && !adminSession?.authenticated) {
+      setLocation("/admin");
+    }
+  }, [isLoading, adminSession, setLocation]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!adminSession?.authenticated) {
+    return null;
+  }
+
+  return <>{children}</>;
+}
 
 function ScrollToTop() {
   const [location] = useLocation();
@@ -55,7 +82,11 @@ function Router() {
         <LayoutWrapper hideHeaderFooter><AdminLogin /></LayoutWrapper>
       </Route>
       <Route path="/admin/dashboard">
-        <LayoutWrapper><AdminDashboard /></LayoutWrapper>
+        <LayoutWrapper>
+          <ProtectedAdminRoute>
+            <AdminDashboard />
+          </ProtectedAdminRoute>
+        </LayoutWrapper>
       </Route>
       <Route>
         <LayoutWrapper><NotFound /></LayoutWrapper>
