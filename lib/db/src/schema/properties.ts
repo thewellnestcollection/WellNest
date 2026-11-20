@@ -18,6 +18,8 @@ export const propertiesTable = pgTable("properties", {
   featured: boolean("featured").notNull().default(false),
   pickSeason: text("pick_season"),
   pickYear: integer("pick_year"),
+  latitude: numeric("latitude", { precision: 10, scale: 7 }),
+  longitude: numeric("longitude", { precision: 10, scale: 7 }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

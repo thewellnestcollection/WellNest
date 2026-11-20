@@ -56,7 +56,7 @@ export function Navbar() {
                 Sign Out
               </Button>
             ) : (
-              <Link href="/collection" className="hidden md:flex text-sm font-serif italic text-muted-foreground hover:text-primary transition-colors">
+              <Link href="/finder" className="hidden md:flex text-sm font-serif italic text-muted-foreground hover:text-primary transition-colors">
                 Find your escape &rarr;
               </Link>
             )}

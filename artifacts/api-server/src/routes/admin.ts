@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, desc } from "drizzle-orm";
-import { db, propertiesTable, newsletterSubscribersTable } from "@workspace/db";
+import { db, propertiesTable, newsletterSubscribersTable, finderSubmissionsTable } from "@workspace/db";
 import {
   AdminLoginBody,
   AdminLoginResponse,
@@ -68,6 +68,8 @@ router.get("/admin/properties", async (req, res): Promise<void> => {
   const result = properties.map((p) => ({
     ...p,
     nightlyPrice: parseFloat(p.nightlyPrice),
+    latitude: p.latitude != null ? parseFloat(p.latitude) : null,
+    longitude: p.longitude != null ? parseFloat(p.longitude) : null,
     createdAt: p.createdAt.toISOString(),
     updatedAt: p.updatedAt.toISOString(),
   }));
@@ -103,12 +105,16 @@ router.post("/admin/properties", async (req, res): Promise<void> => {
       featured: parsed.data.featured ?? false,
       pickSeason: body.pickSeason ?? null,
       pickYear: parsed.data.pickYear,
+      latitude: body.latitude != null ? String(body.latitude) : null,
+      longitude: body.longitude != null ? String(body.longitude) : null,
     })
     .returning();
 
   res.status(201).json({
     ...property,
     nightlyPrice: parseFloat(property.nightlyPrice),
+    latitude: property.latitude != null ? parseFloat(property.latitude) : null,
+    longitude: property.longitude != null ? parseFloat(property.longitude) : null,
     createdAt: property.createdAt.toISOString(),
     updatedAt: property.updatedAt.toISOString(),
   });
@@ -147,6 +153,8 @@ router.patch("/admin/properties/:id", async (req, res): Promise<void> => {
   if (parsed.data.featured !== undefined) updateData.featured = parsed.data.featured;
   if (body.pickSeason !== undefined) updateData.pickSeason = body.pickSeason;
   if (parsed.data.pickYear !== undefined) updateData.pickYear = parsed.data.pickYear;
+  if (body.latitude !== undefined) updateData.latitude = body.latitude != null ? String(body.latitude) : null;
+  if (body.longitude !== undefined) updateData.longitude = body.longitude != null ? String(body.longitude) : null;
 
   const [property] = await db
     .update(propertiesTable)
@@ -162,6 +170,8 @@ router.patch("/admin/properties/:id", async (req, res): Promise<void> => {
   res.json({
     ...property,
     nightlyPrice: parseFloat(property.nightlyPrice),
+    latitude: property.latitude != null ? parseFloat(property.latitude) : null,
+    longitude: property.longitude != null ? parseFloat(property.longitude) : null,
     createdAt: property.createdAt.toISOString(),
     updatedAt: property.updatedAt.toISOString(),
   });
@@ -197,6 +207,22 @@ router.get("/admin/newsletter-subscribers", async (req, res): Promise<void> => {
     .from(newsletterSubscribersTable)
     .orderBy(desc(newsletterSubscribersTable.createdAt));
   res.json(subscribers);
+});
+
+router.get("/admin/finder-submissions", async (req, res): Promise<void> => {
+  if (!requireAdmin(req, res)) return;
+  const submissions = await db
+    .select()
+    .from(finderSubmissionsTable)
+    .orderBy(desc(finderSubmissionsTable.createdAt));
+  const result = submissions.map((s) => ({
+    ...s,
+    createdAt: s.createdAt?.toISOString() ?? null,
+    consentAt: s.consentAt?.toISOString() ?? null,
+    mustHaves: s.mustHaves ?? [],
+    matchedCategories: s.matchedCategories ?? [],
+  }));
+  res.json(result);
 });
 
 export default router;

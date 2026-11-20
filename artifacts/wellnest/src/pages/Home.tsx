@@ -122,15 +122,17 @@ export function Home() {
             Each season we curate one extraordinary retreat per category — chosen for those who value rest and renewal.
           </p>
           <div className="pt-2 flex flex-col items-center gap-2">
+            <Link href="/finder">
+              <button className="bg-white text-foreground hover:bg-white/90 transition-colors px-10 py-3 text-xs tracking-widest uppercase font-medium">
+                Find Your Perfect Stay
+              </button>
+            </Link>
             <button
               onClick={() => setNewsletterOpen(true)}
-              className="bg-white text-foreground hover:bg-white/90 transition-colors px-10 py-3 text-xs tracking-widest uppercase font-medium"
+              className="text-white/65 text-xs font-bold tracking-wide underline underline-offset-2 hover:text-white/90 transition-colors"
             >
-              Join The WellNest Collection
-            </button>
-            <p className="text-white/65 text-xs font-bold tracking-wide">
               Subscribe to our free seasonal newsletter
-            </p>
+            </button>
           </div>
         </div>
       </section>

@@ -1,0 +1,44 @@
+From d32ee309e7aae4cde1f363b09ac8aa7bb32a6adb Mon Sep 17 00:00:00 2001
+From: Tim James <tim@thewellnestcollection.com>
+Date: Wed, 18 Nov 2026 17:50:08 +0000
+Subject: [PATCH 1/2] fix: use jsonb() for mustHaves and matchedCategories in
+ finder schema
+
+text().array() serialises values as PostgreSQL array literals
+({"Farmstay","Cottage"}) which is invalid for jsonb columns.
+Switching to jsonb().$type<string[]>() emits proper JSON arrays
+(["Farmstay","Cottage"]) and resolves the 500 error on
+POST /api/finder/submit.
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01JMgymFBAJ5Nw5GWhccXjDA
+---
+ lib/db/src/schema/finder-submissions.ts | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/lib/db/src/schema/finder-submissions.ts b/lib/db/src/schema/finder-submissions.ts
+index 6622b92..a6b554b 100644
+--- a/lib/db/src/schema/finder-submissions.ts
++++ b/lib/db/src/schema/finder-submissions.ts
+@@ -5,6 +5,7 @@ import {
+   integer,
+   boolean,
+   timestamp,
++  jsonb,
+ } from "drizzle-orm/pg-core";
+ 
+ export const finderSubmissionsTable = pgTable("finder_submissions", {
+@@ -17,8 +18,8 @@ export const finderSubmissionsTable = pgTable("finder_submissions", {
+   guests: integer("guests"),
+   budgetMin: integer("budget_min"),
+   budgetMax: integer("budget_max"),
+-  mustHaves: text("must_haves").array(),
+-  matchedCategories: text("matched_categories").array(),
++  mustHaves: jsonb("must_haves").$type<string[]>(),
++  matchedCategories: jsonb("matched_categories").$type<string[]>(),
+   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+   consentGiven: boolean("consent_given").notNull().default(false),
+   consentAt: timestamp("consent_at", { withTimezone: true }),
+-- 
+2.43.0
+

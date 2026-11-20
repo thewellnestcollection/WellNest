@@ -1,0 +1,1580 @@
+From cea06a81d97b069a5e2e9a14e18bf3847ed2200e Mon Sep 17 00:00:00 2001
+From: Tim James <tim@thewellnestcollection.com>
+Date: Thu, 19 Nov 2026 20:13:33 +0000
+Subject: [PATCH 2/2] feat: finder buttons, admin newsletter/finder tabs,
+ collection map view, lat/lng support
+
+- Navbar & hero buttons now link to /finder
+- Admin dashboard: Newsletter Signups tab (name, email, date + CSV download)
+- Admin dashboard: Finder Requests tab (all submissions + CSV download)
+- Collection page: grid/map toggle with Leaflet + OpenStreetMap pins
+- Clicking a pin shows mini property card popup
+- Property form: latitude/longitude fields for map pin placement
+- DB schema: lat/lng numeric columns on properties table
+- API: lat/lng serialised in all CRUD endpoints
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01JMgymFBAJ5Nw5GWhccXjDA
+---
+ artifacts/api-server/src/routes/admin.ts      |  28 +-
+ artifacts/wellnest/package.json               |   4 +-
+ .../wellnest/src/components/layout/Navbar.tsx |   2 +-
+ artifacts/wellnest/src/main.tsx               |   3 +
+ .../wellnest/src/pages/AdminDashboard.tsx     | 940 ++++++++++--------
+ artifacts/wellnest/src/pages/Collection.tsx   | 205 +++-
+ artifacts/wellnest/src/pages/Home.tsx         |  12 +-
+ lib/db/src/schema/properties.ts               |   2 +
+ 8 files changed, 767 insertions(+), 429 deletions(-)
+
+diff --git a/artifacts/api-server/src/routes/admin.ts b/artifacts/api-server/src/routes/admin.ts
+index 322214d..c890094 100644
+--- a/artifacts/api-server/src/routes/admin.ts
++++ b/artifacts/api-server/src/routes/admin.ts
+@@ -1,6 +1,6 @@
+ import { Router, type IRouter } from "express";
+ import { eq, desc } from "drizzle-orm";
+-import { db, propertiesTable, newsletterSubscribersTable } from "@workspace/db";
++import { db, propertiesTable, newsletterSubscribersTable, finderSubmissionsTable } from "@workspace/db";
+ import {
+   AdminLoginBody,
+   AdminLoginResponse,
+@@ -68,6 +68,8 @@ router.get("/admin/properties", async (req, res): Promise<void> => {
+   const result = properties.map((p) => ({
+     ...p,
+     nightlyPrice: parseFloat(p.nightlyPrice),
++    latitude: p.latitude != null ? parseFloat(p.latitude) : null,
++    longitude: p.longitude != null ? parseFloat(p.longitude) : null,
+     createdAt: p.createdAt.toISOString(),
+     updatedAt: p.updatedAt.toISOString(),
+   }));
+@@ -103,12 +105,16 @@ router.post("/admin/properties", async (req, res): Promise<void> => {
+       featured: parsed.data.featured ?? false,
+       pickSeason: body.pickSeason ?? null,
+       pickYear: parsed.data.pickYear,
++      latitude: body.latitude != null ? String(body.latitude) : null,
++      longitude: body.longitude != null ? String(body.longitude) : null,
+     })
+     .returning();
+ 
+   res.status(201).json({
+     ...property,
+     nightlyPrice: parseFloat(property.nightlyPrice),
++    latitude: property.latitude != null ? parseFloat(property.latitude) : null,
++    longitude: property.longitude != null ? parseFloat(property.longitude) : null,
+     createdAt: property.createdAt.toISOString(),
+     updatedAt: property.updatedAt.toISOString(),
+   });
+@@ -147,6 +153,8 @@ router.patch("/admin/properties/:id", async (req, res): Promise<void> => {
+   if (parsed.data.featured !== undefined) updateData.featured = parsed.data.featured;
+   if (body.pickSeason !== undefined) updateData.pickSeason = body.pickSeason;
+   if (parsed.data.pickYear !== undefined) updateData.pickYear = parsed.data.pickYear;
++  if (body.latitude !== undefined) updateData.latitude = body.latitude != null ? String(body.latitude) : null;
++  if (body.longitude !== undefined) updateData.longitude = body.longitude != null ? String(body.longitude) : null;
+ 
+   const [property] = await db
+     .update(propertiesTable)
+@@ -162,6 +170,8 @@ router.patch("/admin/properties/:id", async (req, res): Promise<void> => {
+   res.json({
+     ...property,
+     nightlyPrice: parseFloat(property.nightlyPrice),
++    latitude: property.latitude != null ? parseFloat(property.latitude) : null,
++    longitude: property.longitude != null ? parseFloat(property.longitude) : null,
+     createdAt: property.createdAt.toISOString(),
+     updatedAt: property.updatedAt.toISOString(),
+   });
+@@ -199,4 +209,20 @@ router.get("/admin/newsletter-subscribers", async (req, res): Promise<void> => {
+   res.json(subscribers);
+ });
+ 
++router.get("/admin/finder-submissions", async (req, res): Promise<void> => {
++  if (!requireAdmin(req, res)) return;
++  const submissions = await db
++    .select()
++    .from(finderSubmissionsTable)
++    .orderBy(desc(finderSubmissionsTable.createdAt));
++  const result = submissions.map((s) => ({
++    ...s,
++    createdAt: s.createdAt?.toISOString() ?? null,
++    consentAt: s.consentAt?.toISOString() ?? null,
++    mustHaves: s.mustHaves ?? [],
++    matchedCategories: s.matchedCategories ?? [],
++  }));
++  res.json(result);
++});
++
+ export default router;
+diff --git a/artifacts/wellnest/package.json b/artifacts/wellnest/package.json
+index b1c5c07..388e37b 100644
+--- a/artifacts/wellnest/package.json
++++ b/artifacts/wellnest/package.json
+@@ -69,6 +69,8 @@
+     "vaul": "^1.1.2",
+     "vite": "catalog:",
+     "wouter": "^3.3.5",
+-    "zod": "catalog:"
++    "zod": "catalog:",
++    "leaflet": "^1.9.4",
++    "@types/leaflet": "^1.9.14"
+   }
+ }
+diff --git a/artifacts/wellnest/src/components/layout/Navbar.tsx b/artifacts/wellnest/src/components/layout/Navbar.tsx
+index 9b8db51..4403a06 100644
+--- a/artifacts/wellnest/src/components/layout/Navbar.tsx
++++ b/artifacts/wellnest/src/components/layout/Navbar.tsx
+@@ -56,7 +56,7 @@ export function Navbar() {
+                 Sign Out
+               </Button>
+             ) : (
+-              <Link href="/collection" className="hidden md:flex text-sm font-serif italic text-muted-foreground hover:text-primary transition-colors">
++              <Link href="/finder" className="hidden md:flex text-sm font-serif italic text-muted-foreground hover:text-primary transition-colors">
+                 Find your escape &rarr;
+               </Link>
+             )}
+diff --git a/artifacts/wellnest/src/main.tsx b/artifacts/wellnest/src/main.tsx
+index 696e0d2..f270241 100644
+--- a/artifacts/wellnest/src/main.tsx
++++ b/artifacts/wellnest/src/main.tsx
+@@ -1,5 +1,8 @@
+ import { createRoot } from "react-dom/client";
+ import App from "./App";
+ import "./index.css";
++import { setBaseUrl } from "@workspace/api-client-react";
++
++setBaseUrl(import.meta.env.VITE_API_URL ?? null);
+ 
+ createRoot(document.getElementById("root")!).render(<App />);
+diff --git a/artifacts/wellnest/src/pages/AdminDashboard.tsx b/artifacts/wellnest/src/pages/AdminDashboard.tsx
+index f3d3c7c..a3b574f 100644
+--- a/artifacts/wellnest/src/pages/AdminDashboard.tsx
++++ b/artifacts/wellnest/src/pages/AdminDashboard.tsx
+@@ -39,12 +39,39 @@ interface Property {
+   featured: boolean;
+   pickSeason: string | null;
+   pickYear: number | null;
++  latitude: number | null;
++  longitude: number | null;
+   createdAt: string;
+   updatedAt: string;
+ }
+ 
++interface NewsletterSubscriber {
++  id: number;
++  firstName: string;
++  lastName: string;
++  email: string;
++  createdAt: string;
++}
++
++interface FinderSubmission {
++  id: number;
++  email: string;
++  firstName: string | null;
++  experience: string | null;
++  location: string | null;
++  style: string | null;
++  guests: number | null;
++  budgetMin: number | null;
++  budgetMax: number | null;
++  mustHaves: string[];
++  matchedCategories: string[];
++  consentGiven: boolean;
++  createdAt: string | null;
++}
++
+ type SortField = "name" | "category" | "location" | "nightlyPrice" | "season";
+ type SortDir = "asc" | "desc";
++type TabKey = "collection" | "newsletter" | "finder";
+ 
+ interface FormData {
+   name: string;
+@@ -60,6 +87,8 @@ interface FormData {
+   featured: boolean;
+   pickSeason: string;
+   pickYear: string;
++  latitude: string;
++  longitude: string;
+ }
+ 
+ // ─── Constants ─────────────────────────────────────────────────────────────────
+@@ -105,18 +134,22 @@ const defaultForm: FormData = {
+   featured: false,
+   pickSeason: "Winter",
+   pickYear: String(CURRENT_YEAR),
++  latitude: "",
++  longitude: "",
+ };
+ 
+ // ─── API helpers ───────────────────────────────────────────────────────────────
+ 
++const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? "";
++
+ async function fetchAdminProperties(): Promise<Property[]> {
+-  const res = await fetch("/api/admin/properties", { credentials: "include" });
++  const res = await fetch(`${API_BASE}/api/admin/properties`, { credentials: "include" });
+   if (!res.ok) throw new Error("Failed to fetch properties");
+   return res.json();
+ }
+ 
+ async function createProperty(data: Record<string, unknown>): Promise<Property> {
+-  const res = await fetch("/api/admin/properties", {
++  const res = await fetch(`${API_BASE}/api/admin/properties`, {
+     method: "POST",
+     credentials: "include",
+     headers: { "Content-Type": "application/json" },
+@@ -130,7 +163,7 @@ async function createProperty(data: Record<string, unknown>): Promise<Property>
+ }
+ 
+ async function updateProperty(id: number, data: Record<string, unknown>): Promise<Property> {
+-  const res = await fetch(`/api/admin/properties/${id}`, {
++  const res = await fetch(`${API_BASE}/api/admin/properties/${id}`, {
+     method: "PATCH",
+     credentials: "include",
+     headers: { "Content-Type": "application/json" },
+@@ -144,7 +177,7 @@ async function updateProperty(id: number, data: Record<string, unknown>): Promis
+ }
+ 
+ async function deleteProperty(id: number): Promise<void> {
+-  const res = await fetch(`/api/admin/properties/${id}`, {
++  const res = await fetch(`${API_BASE}/api/admin/properties/${id}`, {
+     method: "DELETE",
+     credentials: "include",
+   });
+@@ -154,7 +187,7 @@ async function deleteProperty(id: number): Promise<void> {
+ async function uploadImage(file: File): Promise<string> {
+   const formData = new FormData();
+   formData.append("image", file);
+-  const res = await fetch("/api/admin/upload", {
++  const res = await fetch(`${API_BASE}/api/admin/upload`, {
+     method: "POST",
+     credentials: "include",
+     body: formData,
+@@ -164,9 +197,76 @@ async function uploadImage(file: File): Promise<string> {
+   return data.url;
+ }
+ 
+-// ─── Component ─────────────────────────────────────────────────────────────────
++async function fetchNewsletterSubscribers(): Promise<NewsletterSubscriber[]> {
++  const res = await fetch(`${API_BASE}/api/admin/newsletter-subscribers`, { credentials: "include" });
++  if (!res.ok) throw new Error("Failed to fetch subscribers");
++  return res.json();
++}
++
++async function fetchFinderSubmissions(): Promise<FinderSubmission[]> {
++  const res = await fetch(`${API_BASE}/api/admin/finder-submissions`, { credentials: "include" });
++  if (!res.ok) throw new Error("Failed to fetch finder submissions");
++  return res.json();
++}
++
++// ─── CSV helper ────────────────────────────────────────────────────────────────
++
++function downloadCsv(filename: string, headers: string[], rows: (string | number | boolean | null | undefined)[][]) {
++  const csv = [headers, ...rows]
++    .map((r) => r.map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`).join(","))
++    .join("\n");
++  const blob = new Blob([csv], { type: "text/csv" });
++  const url = URL.createObjectURL(blob);
++  const a = document.createElement("a");
++  a.href = url;
++  a.download = filename;
++  a.click();
++  URL.revokeObjectURL(url);
++}
++
++// ─── Main Component ────────────────────────────────────────────────────────────
+ 
+ export function AdminDashboard() {
++  const [activeTab, setActiveTab] = useState<TabKey>("collection");
++
++  return (
++    <div className="min-h-screen bg-background">
++      <div className="container mx-auto px-4 md:px-6 py-12 max-w-7xl">
++
++        {/* Header */}
++        <div className="mb-8">
++          <p className="text-xs uppercase tracking-widest text-muted-foreground mb-1">Admin</p>
++          <h1 className="font-serif text-3xl">WellNest Dashboard</h1>
++        </div>
++
++        {/* Tabs */}
++        <div className="flex border-b border-border mb-8">
++          {(["collection", "newsletter", "finder"] as TabKey[]).map((tab) => (
++            <button
++              key={tab}
++              onClick={() => setActiveTab(tab)}
++              className={`px-6 py-3 text-xs uppercase tracking-widest font-medium border-b-2 transition-colors ${
++                activeTab === tab
++                  ? "border-foreground text-foreground"
++                  : "border-transparent text-muted-foreground hover:text-foreground"
++              }`}
++            >
++              {tab === "collection" ? "Collection" : tab === "newsletter" ? "Newsletter Signups" : "Finder Requests"}
++            </button>
++          ))}
++        </div>
++
++        {activeTab === "collection" && <CollectionTab />}
++        {activeTab === "newsletter" && <NewsletterTab />}
++        {activeTab === "finder" && <FinderTab />}
++      </div>
++    </div>
++  );
++}
++
++// ─── Collection Tab ────────────────────────────────────────────────────────────
++
++function CollectionTab() {
+   const queryClient = useQueryClient();
+   const [dialogOpen, setDialogOpen] = useState(false);
+   const [editingId, setEditingId] = useState<number | null>(null);
+@@ -174,19 +274,15 @@ export function AdminDashboard() {
+   const [sortField, setSortField] = useState<SortField>("season");
+   const [sortDir, setSortDir] = useState<SortDir>("asc");
+   const [uploadingImages, setUploadingImages] = useState(false);
+-  // pendingImages holds only server-side upload paths (non-http)
+   const [pendingImages, setPendingImages] = useState<string[]>([]);
+-  // imageUrlsText holds the raw textarea content for http:// image URLs
+   const [imageUrlsText, setImageUrlsText] = useState<string>("");
+   const fileInputRef = useRef<HTMLInputElement>(null);
+ 
+-  // ── Queries ──
+   const { data: properties, isLoading, error } = useQuery({
+     queryKey: ["admin-properties"],
+     queryFn: fetchAdminProperties,
+   });
+ 
+-  // ── Mutations ──
+   const invalidateCaches = () => {
+     queryClient.invalidateQueries({ queryKey: ["admin-properties"] });
+     queryClient.invalidateQueries({ queryKey: ["available-seasons"] });
+@@ -209,7 +305,6 @@ export function AdminDashboard() {
+     onSuccess: invalidateCaches,
+   });
+ 
+-  // ── Sorting ──
+   const handleSort = (field: SortField) => {
+     if (sortField === field) {
+       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+@@ -226,10 +321,8 @@ export function AdminDashboard() {
+     if (sortField === "season") {
+       const aSeason = (a as any).pickSeason ?? "";
+       const bSeason = (b as any).pickSeason ?? "";
+-      const aYear = a.pickYear ?? 0;
+-      const bYear = b.pickYear ?? 0;
+-      aVal = aYear * 10 + (SEASON_ORDER[aSeason] ?? 99);
+-      bVal = bYear * 10 + (SEASON_ORDER[bSeason] ?? 99);
++      aVal = (a.pickYear ?? 0) * 10 + (SEASON_ORDER[aSeason] ?? 99);
++      bVal = (b.pickYear ?? 0) * 10 + (SEASON_ORDER[bSeason] ?? 99);
+     } else if (sortField === "nightlyPrice") {
+       aVal = a.nightlyPrice;
+       bVal = b.nightlyPrice;
+@@ -243,7 +336,6 @@ export function AdminDashboard() {
+     return 0;
+   });
+ 
+-  // ── Dialog open/close ──
+   const handleOpenCreate = () => {
+     setEditingId(null);
+     setForm(defaultForm);
+@@ -268,8 +360,9 @@ export function AdminDashboard() {
+       featured: property.featured,
+       pickSeason: (property as any).pickSeason ?? "Winter",
+       pickYear: String(property.pickYear ?? CURRENT_YEAR),
++      latitude: property.latitude != null ? String(property.latitude) : "",
++      longitude: property.longitude != null ? String(property.longitude) : "",
+     });
+-    // http:// URLs go into the textarea; server upload paths go into pendingImages
+     const httpImages = (property.images ?? []).filter((u) => u.startsWith("http"));
+     const uploadedImages = (property.images ?? []).filter((u) => !u.startsWith("http"));
+     setImageUrlsText(httpImages.join("\n"));
+@@ -277,7 +370,6 @@ export function AdminDashboard() {
+     setDialogOpen(true);
+   };
+ 
+-  // ── Image upload ──
+   const handleImageFiles = async (files: FileList) => {
+     setUploadingImages(true);
+     try {
+@@ -298,17 +390,14 @@ export function AdminDashboard() {
+     setPendingImages((prev) => prev.filter((_, i) => i !== idx));
+   };
+ 
+-  // ── Submit ──
+   const handleSubmit = () => {
+-    // URL textarea → array of trimmed non-empty lines
+     const urlImages = imageUrlsText
+       .split("\n")
+       .map((s) => s.trim())
+       .filter(Boolean);
+-    // Combine: URL images first (textarea order), then server-uploaded paths
+     const images = [...urlImages, ...pendingImages];
+ 
+-    const parsedData = {
++    const parsedData: Record<string, unknown> = {
+       name: form.name,
+       category: form.category,
+       location: form.location,
+@@ -323,446 +412,473 @@ export function AdminDashboard() {
+       pickSeason: form.pickSeason || null,
+       pickYear: form.pickYear ? parseInt(form.pickYear, 10) : null,
+       images,
++      latitude: form.latitude ? parseFloat(form.latitude) : null,
++      longitude: form.longitude ? parseFloat(form.longitude) : null,
+     };
+ 
+     if (editingId !== null) {
+-      updateMutation.mutate({ id: editingId, data: parsedData as any });
++      updateMutation.mutate({ id: editingId, data: parsedData });
+     } else {
+-      createMutation.mutate(parsedData as any);
++      createMutation.mutate(parsedData);
+     }
+   };
+ 
+-  // ── CSV download ──
+-  const handleDownloadCollectionCSV = () => {
++  const handleDownloadCSV = () => {
+     if (!properties) return;
+-    const headers = ["ID", "Name", "Category", "Location", "Nightly Price", "Guests", "Season", "Year", "Featured", "Website"];
+-    const rows = properties.map((p) => [
+-      p.id,
+-      p.name,
+-      p.category,
+-      p.location,
+-      p.nightlyPrice,
+-      p.guests,
+-      (p as any).pickSeason ?? "",
+-      p.pickYear ?? "",
+-      p.featured ? "Yes" : "No",
+-      p.websiteUrl ?? "",
+-    ]);
+-    const csv = [headers, ...rows]
+-      .map((r) => r.map(String).map((v) => `"${v.replace(/"/g, '""')}"`).join(","))
+-      .join("\n");
+-    const blob = new Blob([csv], { type: "text/csv" });
+-    const url = URL.createObjectURL(blob);
+-    const a = document.createElement("a");
+-    a.href = url;
+-    a.download = "wellnest-collection.csv";
+-    a.click();
+-    URL.revokeObjectURL(url);
++    downloadCsv(
++      "wellnest-collection.csv",
++      ["ID", "Name", "Category", "Location", "Nightly Price", "Guests", "Season", "Year", "Featured", "Website", "Latitude", "Longitude"],
++      properties.map((p) => [
++        p.id, p.name, p.category, p.location, p.nightlyPrice, p.guests,
++        (p as any).pickSeason ?? "", p.pickYear ?? "", p.featured ? "Yes" : "No",
++        p.websiteUrl ?? "", p.latitude ?? "", p.longitude ?? "",
++      ])
++    );
+   };
+ 
+   const isSaving = createMutation.isPending || updateMutation.isPending;
+   const saveError = (createMutation.error as Error)?.message ?? (updateMutation.error as Error)?.message ?? null;
+ 
+-  // ── Render ──
+   return (
+-    <div className="min-h-screen bg-background">
+-      <div className="container mx-auto px-4 md:px-6 py-12 max-w-7xl">
+-
+-        {/* Header */}
+-        <div className="flex items-center justify-between mb-10">
+-          <div>
+-            <p className="text-xs uppercase tracking-widest text-muted-foreground mb-1">Admin</p>
+-            <h1 className="font-serif text-3xl">Manage seasonal property picks</h1>
+-          </div>
+-          <div className="flex items-center gap-3">
+-            <Button variant="outline" size="sm" onClick={handleDownloadCollectionCSV} className="gap-2 text-xs">
+-              <Download className="w-3.5 h-3.5" />
+-              Export CSV
+-            </Button>
+-            <Button
+-              onClick={handleOpenCreate}
+-              size="sm"
+-              className="gap-2 text-xs rounded-none bg-foreground text-background hover:bg-foreground/85"
+-            >
+-              <Plus className="w-3.5 h-3.5" />
+-              Add Property
+-            </Button>
+-          </div>
++    <>
++      <div className="flex items-center justify-between mb-6">
++        <span className="text-sm text-muted-foreground">
++          {properties?.length ?? 0} properties
++        </span>
++        <div className="flex items-center gap-3">
++          <Button variant="outline" size="sm" onClick={handleDownloadCSV} className="gap-2 text-xs">
++            <Download className="w-3.5 h-3.5" /> Export CSV
++          </Button>
++          <Button
++            onClick={handleOpenCreate}
++            size="sm"
++            className="gap-2 text-xs rounded-none bg-foreground text-background hover:bg-foreground/85"
++          >
++            <Plus className="w-3.5 h-3.5" /> Add Property
++          </Button>
+         </div>
++      </div>
+ 
+-        {/* Table */}
+-        {isLoading ? (
+-          <div className="space-y-3">
+-            {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-14 w-full" />)}
+-          </div>
+-        ) : error ? (
+-          <div className="text-center py-20 text-destructive">Failed to load properties.</div>
+-        ) : !properties || properties.length === 0 ? (
+-          <div className="text-center py-32 border border-dashed border-border">
+-            <p className="font-serif text-2xl text-muted-foreground/60 mb-3">No properties added yet</p>
+-            <p className="text-sm text-muted-foreground">Click "Add Property" to get started.</p>
+-          </div>
+-        ) : (
+-          <div className="overflow-x-auto">
+-            <table className="w-full text-sm">
+-              <thead>
+-                <tr className="border-b border-border text-left">
+-                  {(["name", "category", "location", "season", "nightlyPrice"] as SortField[]).map((field) => (
+-                    <th
+-                      key={field}
+-                      className="pb-3 pr-6 font-medium text-xs uppercase tracking-wider text-muted-foreground"
++      {isLoading ? (
++        <div className="space-y-3">
++          {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-14 w-full" />)}
++        </div>
++      ) : error ? (
++        <div className="text-center py-20 text-destructive">Failed to load properties.</div>
++      ) : !properties || properties.length === 0 ? (
++        <div className="text-center py-32 border border-dashed border-border">
++          <p className="font-serif text-2xl text-muted-foreground/60 mb-3">No properties added yet</p>
++          <p className="text-sm text-muted-foreground">Click "Add Property" to get started.</p>
++        </div>
++      ) : (
++        <div className="overflow-x-auto">
++          <table className="w-full text-sm">
++            <thead>
++              <tr className="border-b border-border text-left">
++                {(["name", "category", "location", "season", "nightlyPrice"] as SortField[]).map((field) => (
++                  <th key={field} className="pb-3 pr-6 font-medium text-xs uppercase tracking-wider text-muted-foreground">
++                    <button
++                      onClick={() => handleSort(field)}
++                      className="flex items-center gap-1 hover:text-foreground transition-colors"
+                     >
+-                      <button
+-                        onClick={() => handleSort(field)}
+-                        className="flex items-center gap-1 hover:text-foreground transition-colors"
+-                      >
+-                        {field === "nightlyPrice" ? "Price" : field.charAt(0).toUpperCase() + field.slice(1)}
+-                        <ArrowUpDown className="w-3 h-3" />
+-                      </button>
+-                    </th>
+-                  ))}
+-                  <th className="pb-3 pr-6 font-medium text-xs uppercase tracking-wider text-muted-foreground">
+-                    Featured
++                      {field === "nightlyPrice" ? "Price" : field.charAt(0).toUpperCase() + field.slice(1)}
++                      <ArrowUpDown className="w-3 h-3" />
++                    </button>
+                   </th>
+-                  <th className="pb-3 font-medium text-xs uppercase tracking-wider text-muted-foreground">
+-                    Actions
+-                  </th>
+-                </tr>
+-              </thead>
+-              <tbody>
+-                {sortedProperties.map((property) => {
+-                  const pickSeason = (property as any).pickSeason as string | null;
+-                  return (
+-                    <tr
+-                      key={property.id}
+-                      className="border-b border-border/50 hover:bg-muted/30 transition-colors"
+-                    >
+-                      <td className="py-4 pr-6 font-medium">{property.name}</td>
+-                      <td className="py-4 pr-6 text-muted-foreground">{property.category}</td>
+-                      <td className="py-4 pr-6 text-muted-foreground">{property.location}</td>
+-                      <td className="py-4 pr-6">
+-                        {pickSeason && property.pickYear ? (
+-                          <span className="text-xs font-medium">
+-                            {pickSeason} {property.pickYear}
+-                          </span>
+-                        ) : (
+-                          <span className="text-muted-foreground italic text-xs">Unassigned</span>
+-                        )}
+-                      </td>
+-                      <td className="py-4 pr-6 text-muted-foreground">£{property.nightlyPrice}/nt</td>
+-                      <td className="py-4 pr-6">
+-                        {property.featured && (
+-                          <Badge variant="secondary" className="text-xs">Featured</Badge>
+-                        )}
+-                      </td>
+-                      <td className="py-4">
+-                        <div className="flex items-center gap-2">
+-                          <Button
+-                            variant="ghost"
+-                            size="sm"
+-                            onClick={() => handleOpenEdit(property)}
+-                            className="h-8 w-8 p-0"
+-                          >
+-                            <Pencil className="w-3.5 h-3.5" />
+-                          </Button>
+-                          <Button
+-                            variant="ghost"
+-                            size="sm"
+-                            onClick={() => {
+-                              if (confirm(`Delete "${property.name}"?`)) {
+-                                deleteMutation.mutate(property.id);
+-                              }
+-                            }}
+-                            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+-                          >
+-                            <Trash2 className="w-3.5 h-3.5" />
+-                          </Button>
+-                        </div>
+-                      </td>
+-                    </tr>
+-                  );
+-                })}
+-              </tbody>
+-            </table>
+-          </div>
+-        )}
+-
+-        {/* Dialog */}
+-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+-            <DialogHeader>
+-              <DialogTitle className="font-serif text-2xl">
+-                {editingId ? "Edit Property" : "Add Property"}
+-              </DialogTitle>
+-            </DialogHeader>
+-
+-            <div className="space-y-6 mt-4">
+-
+-              {/* Seasonal Assignment */}
+-              <div className="p-5 border border-border/60 bg-muted/20 space-y-4">
+-                <p className="text-xs uppercase tracking-widest text-muted-foreground font-medium">
+-                  Seasonal Assignment
+-                </p>
+-                <div className="grid grid-cols-2 gap-4">
+-                  <div className="space-y-2">
+-                    <Label>Season</Label>
+-                    <Select
+-                      value={form.pickSeason}
+-                      onValueChange={(v) => setForm((f) => ({ ...f, pickSeason: v }))}
+-                    >
+-                      <SelectTrigger>
+-                        <SelectValue placeholder="Select season" />
+-                      </SelectTrigger>
+-                      <SelectContent>
+-                        {SEASONS.map((s) => (
+-                          <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+-                        ))}
+-                      </SelectContent>
+-                    </Select>
+-                  </div>
+-                  <div className="space-y-2">
+-                    <Label>Year</Label>
+-                    <Select
+-                      value={form.pickYear}
+-                      onValueChange={(v) => setForm((f) => ({ ...f, pickYear: v }))}
+-                    >
+-                      <SelectTrigger>
+-                        <SelectValue placeholder="Select year" />
+-                      </SelectTrigger>
+-                      <SelectContent>
+-                        {YEARS.map((y) => (
+-                          <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+-                        ))}
+-                      </SelectContent>
+-                    </Select>
+-                  </div>
++                ))}
++                <th className="pb-3 pr-6 font-medium text-xs uppercase tracking-wider text-muted-foreground">Map Pin</th>
++                <th className="pb-3 pr-6 font-medium text-xs uppercase tracking-wider text-muted-foreground">Featured</th>
++                <th className="pb-3 font-medium text-xs uppercase tracking-wider text-muted-foreground">Actions</th>
++              </tr>
++            </thead>
++            <tbody>
++              {sortedProperties.map((property) => {
++                const pickSeason = (property as any).pickSeason as string | null;
++                const hasCoords = property.latitude != null && property.longitude != null;
++                return (
++                  <tr key={property.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
++                    <td className="py-4 pr-6 font-medium">{property.name}</td>
++                    <td className="py-4 pr-6 text-muted-foreground">{property.category}</td>
++                    <td className="py-4 pr-6 text-muted-foreground">{property.location}</td>
++                    <td className="py-4 pr-6">
++                      {pickSeason && property.pickYear ? (
++                        <span className="text-xs font-medium">{pickSeason} {property.pickYear}</span>
++                      ) : (
++                        <span className="text-muted-foreground italic text-xs">Unassigned</span>
++                      )}
++                    </td>
++                    <td className="py-4 pr-6 text-muted-foreground">£{property.nightlyPrice}/nt</td>
++                    <td className="py-4 pr-6">
++                      {hasCoords ? (
++                        <span className="text-xs text-emerald-600 font-medium">✓ Set</span>
++                      ) : (
++                        <span className="text-xs text-muted-foreground italic">—</span>
++                      )}
++                    </td>
++                    <td className="py-4 pr-6">
++                      {property.featured && <Badge variant="secondary" className="text-xs">Featured</Badge>}
++                    </td>
++                    <td className="py-4">
++                      <div className="flex items-center gap-2">
++                        <Button variant="ghost" size="sm" onClick={() => handleOpenEdit(property)} className="h-8 w-8 p-0">
++                          <Pencil className="w-3.5 h-3.5" />
++                        </Button>
++                        <Button
++                          variant="ghost" size="sm"
++                          onClick={() => { if (confirm(`Delete "${property.name}"?`)) deleteMutation.mutate(property.id); }}
++                          className="h-8 w-8 p-0 text-destructive hover:text-destructive"
++                        >
++                          <Trash2 className="w-3.5 h-3.5" />
++                        </Button>
++                      </div>
++                    </td>
++                  </tr>
++                );
++              })}
++            </tbody>
++          </table>
++        </div>
++      )}
++
++      {/* Dialog */}
++      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
++        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
++          <DialogHeader>
++            <DialogTitle className="font-serif text-2xl">
++              {editingId ? "Edit Property" : "Add Property"}
++            </DialogTitle>
++          </DialogHeader>
++
++          <div className="space-y-6 mt-4">
++
++            {/* Seasonal Assignment */}
++            <div className="p-5 border border-border/60 bg-muted/20 space-y-4">
++              <p className="text-xs uppercase tracking-widest text-muted-foreground font-medium">Seasonal Assignment</p>
++              <div className="grid grid-cols-2 gap-4">
++                <div className="space-y-2">
++                  <Label>Season</Label>
++                  <Select value={form.pickSeason} onValueChange={(v) => setForm((f) => ({ ...f, pickSeason: v }))}>
++                    <SelectTrigger><SelectValue placeholder="Select season" /></SelectTrigger>
++                    <SelectContent>
++                      {SEASONS.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
++                    </SelectContent>
++                  </Select>
++                </div>
++                <div className="space-y-2">
++                  <Label>Year</Label>
++                  <Select value={form.pickYear} onValueChange={(v) => setForm((f) => ({ ...f, pickYear: v }))}>
++                    <SelectTrigger><SelectValue placeholder="Select year" /></SelectTrigger>
++                    <SelectContent>
++                      {YEARS.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
++                    </SelectContent>
++                  </Select>
+                 </div>
+               </div>
++            </div>
+ 
+-              {/* Property Name */}
+-              <div className="space-y-2">
+-                <Label>Property Name</Label>
+-                <Input
+-                  value={form.name}
+-                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+-                  placeholder="e.g. Heckfield Place"
+-                />
+-              </div>
++            {/* Property Name */}
++            <div className="space-y-2">
++              <Label>Property Name</Label>
++              <Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="e.g. Heckfield Place" />
++            </div>
+ 
+-              {/* Category */}
++            {/* Category */}
++            <div className="space-y-2">
++              <Label>Category</Label>
++              <Select value={form.category} onValueChange={(v) => setForm((f) => ({ ...f, category: v }))}>
++                <SelectTrigger><SelectValue /></SelectTrigger>
++                <SelectContent>
++                  {CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
++                </SelectContent>
++              </Select>
++            </div>
++
++            {/* Location */}
++            <div className="space-y-2">
++              <Label>Location</Label>
++              <Input value={form.location} onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))} placeholder="e.g. Hook, Hampshire" />
++            </div>
++
++            {/* Price + Guests */}
++            <div className="grid grid-cols-2 gap-4">
+               <div className="space-y-2">
+-                <Label>Category</Label>
+-                <Select
+-                  value={form.category}
+-                  onValueChange={(v) => setForm((f) => ({ ...f, category: v }))}
+-                >
+-                  <SelectTrigger>
+-                    <SelectValue />
+-                  </SelectTrigger>
+-                  <SelectContent>
+-                    {CATEGORIES.map((c) => (
+-                      <SelectItem key={c} value={c}>{c}</SelectItem>
+-                    ))}
+-                  </SelectContent>
+-                </Select>
++                <Label>Nightly Price (£)</Label>
++                <Input type="number" value={form.nightlyPrice} onChange={(e) => setForm((f) => ({ ...f, nightlyPrice: e.target.value }))} placeholder="e.g. 450" />
+               </div>
+-
+-              {/* Location */}
+               <div className="space-y-2">
+-                <Label>Location</Label>
+-                <Input
+-                  value={form.location}
+-                  onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
+-                  placeholder="e.g. Hook, Hampshire"
+-                />
++                <Label>Max Guests</Label>
++                <Input type="number" value={form.guests} onChange={(e) => setForm((f) => ({ ...f, guests: e.target.value }))} placeholder="e.g. 10" />
+               </div>
++            </div>
+ 
+-              {/* Price + Guests */}
++            {/* Map Coordinates */}
++            <div className="p-5 border border-border/60 bg-muted/20 space-y-4">
++              <div>
++                <p className="text-xs uppercase tracking-widest text-muted-foreground font-medium">Map Pin Location</p>
++                <p className="text-xs text-muted-foreground mt-1">Optional — needed for map view on Collection page. Find coordinates at <a href="https://www.latlong.net" target="_blank" rel="noopener noreferrer" className="underline">latlong.net</a></p>
++              </div>
+               <div className="grid grid-cols-2 gap-4">
+                 <div className="space-y-2">
+-                  <Label>Nightly Price (£)</Label>
+-                  <Input
+-                    type="number"
+-                    value={form.nightlyPrice}
+-                    onChange={(e) => setForm((f) => ({ ...f, nightlyPrice: e.target.value }))}
+-                    placeholder="e.g. 450"
+-                  />
++                  <Label>Latitude</Label>
++                  <Input type="number" step="any" value={form.latitude} onChange={(e) => setForm((f) => ({ ...f, latitude: e.target.value }))} placeholder="e.g. 51.1234" />
+                 </div>
+                 <div className="space-y-2">
+-                  <Label>Max Guests</Label>
+-                  <Input
+-                    type="number"
+-                    value={form.guests}
+-                    onChange={(e) => setForm((f) => ({ ...f, guests: e.target.value }))}
+-                    placeholder="e.g. 10"
+-                  />
++                  <Label>Longitude</Label>
++                  <Input type="number" step="any" value={form.longitude} onChange={(e) => setForm((f) => ({ ...f, longitude: e.target.value }))} placeholder="e.g. -1.5678" />
+                 </div>
+               </div>
++            </div>
+ 
+-              {/* Description */}
+-              <div className="space-y-2">
+-                <Label>Description</Label>
+-                <Textarea
+-                  value={form.description}
+-                  onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+-                  placeholder="Short description of the property..."
+-                  rows={3}
+-                />
+-              </div>
++            {/* Description */}
++            <div className="space-y-2">
++              <Label>Description</Label>
++              <Textarea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} placeholder="Short description of the property..." rows={3} />
++            </div>
++
++            {/* Facilities */}
++            <div className="space-y-2">
++              <Label>Facilities <span className="text-muted-foreground font-normal">(comma-separated)</span></Label>
++              <Input value={form.facilities} onChange={(e) => setForm((f) => ({ ...f, facilities: e.target.value }))} placeholder="e.g. Pool, Spa, Hot tub" />
++            </div>
++
++            {/* Contact */}
++            <div className="space-y-2">
++              <Label>Contact Email</Label>
++              <Input type="email" value={form.contactEmail} onChange={(e) => setForm((f) => ({ ...f, contactEmail: e.target.value }))} placeholder="e.g. hello@property.com" />
++            </div>
+ 
+-              {/* Facilities */}
++            {/* Website + Instagram */}
++            <div className="grid grid-cols-2 gap-4">
+               <div className="space-y-2">
+-                <Label>
+-                  Facilities{" "}
+-                  <span className="text-muted-foreground font-normal">(comma-separated)</span>
+-                </Label>
+-                <Input
+-                  value={form.facilities}
+-                  onChange={(e) => setForm((f) => ({ ...f, facilities: e.target.value }))}
+-                  placeholder="e.g. Pool, Spa, Hot tub"
+-                />
++                <Label>Website URL</Label>
++                <Input value={form.websiteUrl} onChange={(e) => setForm((f) => ({ ...f, websiteUrl: e.target.value }))} placeholder="https://..." />
+               </div>
+-
+-              {/* Contact */}
+               <div className="space-y-2">
+-                <Label>Contact Email</Label>
+-                <Input
+-                  type="email"
+-                  value={form.contactEmail}
+-                  onChange={(e) => setForm((f) => ({ ...f, contactEmail: e.target.value }))}
+-                  placeholder="e.g. hello@property.com"
+-                />
++                <Label>Instagram Handle</Label>
++                <Input value={form.instagramHandle} onChange={(e) => setForm((f) => ({ ...f, instagramHandle: e.target.value }))} placeholder="@handle" />
+               </div>
++            </div>
+ 
+-              {/* Website + Instagram */}
+-              <div className="grid grid-cols-2 gap-4">
+-                <div className="space-y-2">
+-                  <Label>Website URL</Label>
+-                  <Input
+-                    value={form.websiteUrl}
+-                    onChange={(e) => setForm((f) => ({ ...f, websiteUrl: e.target.value }))}
+-                    placeholder="https://..."
+-                  />
+-                </div>
+-                <div className="space-y-2">
+-                  <Label>Instagram Handle</Label>
+-                  <Input
+-                    value={form.instagramHandle}
+-                    onChange={(e) => setForm((f) => ({ ...f, instagramHandle: e.target.value }))}
+-                    placeholder="@handle"
+-                  />
+-                </div>
+-              </div>
++            {/* Featured */}
++            <div className="flex items-center gap-3">
++              <input type="checkbox" id="featured" checked={form.featured} onChange={(e) => setForm((f) => ({ ...f, featured: e.target.checked }))} className="w-4 h-4" />
++              <Label htmlFor="featured">Mark as featured</Label>
++            </div>
+ 
+-              {/* Featured */}
+-              <div className="flex items-center gap-3">
+-                <input
+-                  type="checkbox"
+-                  id="featured"
+-                  checked={form.featured}
+-                  onChange={(e) => setForm((f) => ({ ...f, featured: e.target.checked }))}
+-                  className="w-4 h-4"
++            {/* Images */}
++            <div className="space-y-4">
++              <Label>Images</Label>
++              <div className="space-y-1.5">
++                <p className="text-xs text-muted-foreground">Image URLs — one per line, first line is the main image</p>
++                <textarea
++                  value={imageUrlsText}
++                  onChange={(e) => setImageUrlsText(e.target.value)}
++                  placeholder={"https://example.com/image1.jpg\nhttps://example.com/image2.jpg"}
++                  rows={4}
++                  className="w-full border border-input bg-background px-3 py-2 text-sm font-mono resize-y focus:outline-none focus:ring-1 focus:ring-ring"
+                 />
+-                <Label htmlFor="featured">Mark as featured</Label>
+               </div>
+-
+-              {/* Images */}
+-              <div className="space-y-4">
+-                <Label>Images</Label>
+-
+-                {/* URL textarea */}
++              <div className="space-y-1.5">
++                <p className="text-xs text-muted-foreground">Or upload images directly</p>
++                <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => e.target.files && handleImageFiles(e.target.files)} />
++                <Button type="button" variant="outline" size="sm" disabled={uploadingImages} onClick={() => fileInputRef.current?.click()} className="gap-2 text-xs">
++                  <Upload className="w-3.5 h-3.5" />
++                  {uploadingImages ? "Uploading…" : "Upload Images"}
++                </Button>
++              </div>
++              {pendingImages.length > 0 && (
+                 <div className="space-y-1.5">
+-                  <p className="text-xs text-muted-foreground">
+-                    Image URLs — one per line, first line is the main image
+-                  </p>
+-                  <textarea
+-                    value={imageUrlsText}
+-                    onChange={(e) => setImageUrlsText(e.target.value)}
+-                    placeholder={"https://example.com/image1.jpg\nhttps://example.com/image2.jpg"}
+-                    rows={4}
+-                    className="w-full border border-input bg-background px-3 py-2 text-sm font-mono resize-y focus:outline-none focus:ring-1 focus:ring-ring"
+-                  />
++                  <p className="text-xs text-muted-foreground">Uploaded images</p>
++                  <div className="grid grid-cols-3 gap-2">
++                    {pendingImages.map((url, idx) => (
++                      <div key={idx} className="relative aspect-video bg-muted overflow-hidden">
++                        <img src={url.startsWith("http") ? url : `${API_BASE}${url}`} alt="" className="object-cover w-full h-full" />
++                        <button type="button" onClick={() => handleRemoveUploadedImage(idx)} className="absolute top-1 right-1 bg-black/60 text-white rounded-full w-5 h-5 flex items-center justify-center">
++                          <X className="w-3 h-3" />
++                        </button>
++                      </div>
++                    ))}
++                  </div>
+                 </div>
++              )}
++            </div>
+ 
+-                {/* Upload */}
+-                <div className="space-y-1.5">
+-                  <p className="text-xs text-muted-foreground">Or upload images directly</p>
+-                  <input
+-                    ref={fileInputRef}
+-                    type="file"
+-                    accept="image/*"
+-                    multiple
+-                    className="hidden"
+-                    onChange={(e) => e.target.files && handleImageFiles(e.target.files)}
+-                  />
+-                  <Button
+-                    type="button"
+-                    variant="outline"
+-                    size="sm"
+-                    disabled={uploadingImages}
+-                    onClick={() => fileInputRef.current?.click()}
+-                    className="gap-2 text-xs"
+-                  >
+-                    <Upload className="w-3.5 h-3.5" />
+-                    {uploadingImages ? "Uploading…" : "Upload Images"}
+-                  </Button>
+-                </div>
++            {saveError && (
++              <p className="text-sm text-destructive border border-destructive/30 bg-destructive/5 px-3 py-2">{saveError}</p>
++            )}
+ 
+-                {/* Uploaded file previews */}
+-                {pendingImages.length > 0 && (
+-                  <div className="space-y-1.5">
+-                    <p className="text-xs text-muted-foreground">Uploaded images</p>
+-                    <div className="grid grid-cols-3 gap-2">
+-                      {pendingImages.map((url, idx) => (
+-                        <div key={idx} className="relative aspect-video bg-muted overflow-hidden">
+-                          <img
+-                            src={
+-                              url.startsWith("http")
+-                                ? url
+-                                : `https://workspaceapi-server-production-3677.up.railway.app${url}`
+-                            }
+-                            alt=""
+-                            className="object-cover w-full h-full"
+-                          />
+-                          <button
+-                            type="button"
+-                            onClick={() => handleRemoveUploadedImage(idx)}
+-                            className="absolute top-1 right-1 bg-black/60 text-white rounded-full w-5 h-5 flex items-center justify-center"
+-                          >
+-                            <X className="w-3 h-3" />
+-                          </button>
+-                        </div>
+-                      ))}
+-                    </div>
+-                  </div>
+-                )}
+-              </div>
++            <div className="flex justify-end gap-3 pt-2 border-t border-border">
++              <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
++              <Button onClick={handleSubmit} disabled={isSaving} className="rounded-none bg-foreground text-background hover:bg-foreground/85">
++                {isSaving ? "Saving…" : editingId ? "Save Changes" : "Add Property"}
++              </Button>
++            </div>
++          </div>
++        </DialogContent>
++      </Dialog>
++    </>
++  );
++}
+ 
+-              {/* Error */}
+-              {saveError && (
+-                <p className="text-sm text-destructive border border-destructive/30 bg-destructive/5 px-3 py-2">
+-                  {saveError}
+-                </p>
+-              )}
++// ─── Newsletter Tab ────────────────────────────────────────────────────────────
+ 
+-              {/* Submit */}
+-              <div className="flex justify-end gap-3 pt-2 border-t border-border">
+-                <Button variant="outline" onClick={() => setDialogOpen(false)}>
+-                  Cancel
+-                </Button>
+-                <Button
+-                  onClick={handleSubmit}
+-                  disabled={isSaving}
+-                  className="rounded-none bg-foreground text-background hover:bg-foreground/85"
+-                >
+-                  {isSaving ? "Saving…" : editingId ? "Save Changes" : "Add Property"}
+-                </Button>
+-              </div>
++function NewsletterTab() {
++  const { data: subscribers, isLoading, error } = useQuery({
++    queryKey: ["admin-newsletter-subscribers"],
++    queryFn: fetchNewsletterSubscribers,
++  });
+ 
+-            </div>
+-          </DialogContent>
+-        </Dialog>
++  const handleDownloadCSV = () => {
++    if (!subscribers) return;
++    downloadCsv(
++      "wellnest-newsletter-subscribers.csv",
++      ["ID", "First Name", "Last Name", "Email", "Signed Up"],
++      subscribers.map((s) => [s.id, s.firstName, s.lastName, s.email, s.createdAt])
++    );
++  };
++
++  return (
++    <>
++      <div className="flex items-center justify-between mb-6">
++        <span className="text-sm text-muted-foreground">
++          {subscribers?.length ?? 0} subscriber{subscribers?.length !== 1 ? "s" : ""}
++        </span>
++        <Button variant="outline" size="sm" onClick={handleDownloadCSV} disabled={!subscribers?.length} className="gap-2 text-xs">
++          <Download className="w-3.5 h-3.5" /> Download CSV
++        </Button>
+       </div>
+-    </div>
++
++      {isLoading ? (
++        <div className="space-y-3">
++          {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-12 w-full" />)}
++        </div>
++      ) : error ? (
++        <div className="text-center py-20 text-destructive">Failed to load subscribers.</div>
++      ) : !subscribers || subscribers.length === 0 ? (
++        <div className="text-center py-32 border border-dashed border-border">
++          <p className="font-serif text-2xl text-muted-foreground/60 mb-3">No subscribers yet</p>
++          <p className="text-sm text-muted-foreground">Signups will appear here once people subscribe.</p>
++        </div>
++      ) : (
++        <div className="overflow-x-auto">
++          <table className="w-full text-sm">
++            <thead>
++              <tr className="border-b border-border text-left">
++                {["Name", "Email", "Date Signed Up"].map((h) => (
++                  <th key={h} className="pb-3 pr-6 font-medium text-xs uppercase tracking-wider text-muted-foreground">{h}</th>
++                ))}
++              </tr>
++            </thead>
++            <tbody>
++              {subscribers.map((s) => (
++                <tr key={s.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
++                  <td className="py-4 pr-6 font-medium">{s.firstName} {s.lastName}</td>
++                  <td className="py-4 pr-6 text-muted-foreground">{s.email}</td>
++                  <td className="py-4 pr-6 text-muted-foreground">
++                    {s.createdAt ? new Date(s.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "—"}
++                  </td>
++                </tr>
++              ))}
++            </tbody>
++          </table>
++        </div>
++      )}
++    </>
++  );
++}
++
++// ─── Finder Requests Tab ───────────────────────────────────────────────────────
++
++function FinderTab() {
++  const { data: submissions, isLoading, error } = useQuery({
++    queryKey: ["admin-finder-submissions"],
++    queryFn: fetchFinderSubmissions,
++  });
++
++  const handleDownloadCSV = () => {
++    if (!submissions) return;
++    downloadCsv(
++      "wellnest-finder-requests.csv",
++      ["ID", "Name", "Email", "Experience", "Location", "Style", "Guests", "Budget Min", "Budget Max", "Must Haves", "Matched Categories", "Date"],
++      submissions.map((s) => [
++        s.id,
++        s.firstName ?? "",
++        s.email,
++        s.experience ?? "",
++        s.location ?? "",
++        s.style ?? "",
++        s.guests ?? "",
++        s.budgetMin ?? "",
++        s.budgetMax ?? "",
++        (s.mustHaves ?? []).join("; "),
++        (s.matchedCategories ?? []).join("; "),
++        s.createdAt ?? "",
++      ])
++    );
++  };
++
++  return (
++    <>
++      <div className="flex items-center justify-between mb-6">
++        <span className="text-sm text-muted-foreground">
++          {submissions?.length ?? 0} request{submissions?.length !== 1 ? "s" : ""}
++        </span>
++        <Button variant="outline" size="sm" onClick={handleDownloadCSV} disabled={!submissions?.length} className="gap-2 text-xs">
++          <Download className="w-3.5 h-3.5" /> Download CSV
++        </Button>
++      </div>
++
++      {isLoading ? (
++        <div className="space-y-3">
++          {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-12 w-full" />)}
++        </div>
++      ) : error ? (
++        <div className="text-center py-20 text-destructive">Failed to load finder requests.</div>
++      ) : !submissions || submissions.length === 0 ? (
++        <div className="text-center py-32 border border-dashed border-border">
++          <p className="font-serif text-2xl text-muted-foreground/60 mb-3">No finder requests yet</p>
++          <p className="text-sm text-muted-foreground">Requests submitted via the Finder will appear here.</p>
++        </div>
++      ) : (
++        <div className="overflow-x-auto">
++          <table className="w-full text-sm">
++            <thead>
++              <tr className="border-b border-border text-left">
++                {["Date", "Name", "Email", "Location", "Experience", "Style", "Guests", "Budget", "Matched"].map((h) => (
++                  <th key={h} className="pb-3 pr-4 font-medium text-xs uppercase tracking-wider text-muted-foreground whitespace-nowrap">{h}</th>
++                ))}
++              </tr>
++            </thead>
++            <tbody>
++              {submissions.map((s) => (
++                <tr key={s.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors align-top">
++                  <td className="py-4 pr-4 text-muted-foreground whitespace-nowrap">
++                    {s.createdAt ? new Date(s.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "—"}
++                  </td>
++                  <td className="py-4 pr-4 font-medium whitespace-nowrap">{s.firstName ?? "—"}</td>
++                  <td className="py-4 pr-4 text-muted-foreground">{s.email}</td>
++                  <td className="py-4 pr-4 text-muted-foreground">{s.location ?? "—"}</td>
++                  <td className="py-4 pr-4 text-muted-foreground capitalize">{s.experience ?? "—"}</td>
++                  <td className="py-4 pr-4 text-muted-foreground capitalize">{s.style ?? "—"}</td>
++                  <td className="py-4 pr-4 text-muted-foreground">{s.guests ?? "—"}</td>
++                  <td className="py-4 pr-4 text-muted-foreground whitespace-nowrap">
++                    {s.budgetMin != null || s.budgetMax != null
++                      ? `£${s.budgetMin ?? "?"} – £${s.budgetMax ?? "?"}`
++                      : "—"}
++                  </td>
++                  <td className="py-4 pr-4">
++                    <div className="flex flex-wrap gap-1">
++                      {(s.matchedCategories ?? []).map((cat) => (
++                        <span key={cat} className="inline-block text-xs bg-muted px-1.5 py-0.5 rounded whitespace-nowrap">{cat}</span>
++                      ))}
++                    </div>
++                  </td>
++                </tr>
++              ))}
++            </tbody>
++          </table>
++        </div>
++      )}
++    </>
+   );
+ }
+diff --git a/artifacts/wellnest/src/pages/Collection.tsx b/artifacts/wellnest/src/pages/Collection.tsx
+index f2a4e7c..d941fa6 100644
+--- a/artifacts/wellnest/src/pages/Collection.tsx
++++ b/artifacts/wellnest/src/pages/Collection.tsx
+@@ -1,10 +1,10 @@
+-import { useState, useEffect, useMemo } from "react";
++import { useState, useEffect, useMemo, useRef } from "react";
+ import { useLocation } from "wouter";
+ import { useListProperties, useGetPropertyCategories } from "@workspace/api-client-react";
+ import { PropertyCard } from "@/components/property/PropertyCard";
+ import { CategoryFilter } from "@/components/property/CategoryFilter";
+ import { Input } from "@/components/ui/input";
+-import { Search } from "lucide-react";
++import { Search, LayoutGrid, Map } from "lucide-react";
+ import { Skeleton } from "@/components/ui/skeleton";
+ import { useDebounce } from "@/hooks/use-debounce";
+ import {
+@@ -16,6 +16,7 @@ import {
+ } from "@/components/ui/select";
+ 
+ type SortOption = "default" | "category-asc" | "season-desc" | "season-asc" | "price-asc" | "price-desc";
++type ViewMode = "grid" | "map";
+ 
+ const SEASON_ORDER: Record<string, number> = {
+   Winter: 0,
+@@ -32,6 +33,7 @@ export function Collection() {
+   const [category, setCategory] = useState<string | undefined>(initialCategory);
+   const [searchQuery, setSearchQuery] = useState("");
+   const [sortOption, setSortOption] = useState<SortOption>("default");
++  const [viewMode, setViewMode] = useState<ViewMode>("grid");
+   const debouncedSearch = useDebounce(searchQuery, 500);
+ 
+   // Sync URL params to state on mount/location change
+@@ -119,7 +121,7 @@ export function Collection() {
+         </div>
+       </div>
+ 
+-      {/* Grid */}
++      {/* Content */}
+       <main className="flex-1 container mx-auto px-4 md:px-6 py-12">
+         {isLoading ? (
+           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
+@@ -145,7 +147,7 @@ export function Collection() {
+           <div>
+             <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+               <span className="text-sm text-muted-foreground uppercase tracking-wider font-medium shrink-0">
+-                Showing {sortedProperties.length} {sortedProperties.length === 1 ? 'property' : 'properties'}
++                Showing {sortedProperties.length} {sortedProperties.length === 1 ? "property" : "properties"}
+               </span>
+               <div className="flex items-center gap-3">
+                 <div className="relative w-full sm:w-60">
+@@ -176,16 +178,201 @@ export function Collection() {
+                     </Select>
+                   </div>
+                 )}
++                {/* Grid / Map toggle */}
++                <div className="flex border border-border shrink-0">
++                  <button
++                    onClick={() => setViewMode("grid")}
++                    title="Grid view"
++                    className={`flex items-center px-3 h-9 transition-colors ${
++                      viewMode === "grid"
++                        ? "bg-foreground text-background"
++                        : "text-muted-foreground hover:text-foreground"
++                    }`}
++                  >
++                    <LayoutGrid className="w-4 h-4" />
++                  </button>
++                  <button
++                    onClick={() => setViewMode("map")}
++                    title="Map view"
++                    className={`flex items-center px-3 h-9 transition-colors ${
++                      viewMode === "map"
++                        ? "bg-foreground text-background"
++                        : "text-muted-foreground hover:text-foreground"
++                    }`}
++                  >
++                    <Map className="w-4 h-4" />
++                  </button>
++                </div>
+               </div>
+             </div>
+-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-16">
+-              {sortedProperties.map((property) => (
+-                <PropertyCard key={property.id} property={property} showCategory showSeasonBadge />
+-              ))}
+-            </div>
++
++            {viewMode === "grid" ? (
++              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-16">
++                {sortedProperties.map((property) => (
++                  <PropertyCard key={property.id} property={property} showCategory showSeasonBadge />
++                ))}
++              </div>
++            ) : (
++              <MapView properties={sortedProperties as any[]} />
++            )}
+           </div>
+         )}
+       </main>
+     </div>
+   );
+ }
++
++// ─── Map View ─────────────────────────────────────────────────────────────────
++
++interface MapProperty {
++  id: number;
++  name: string;
++  category: string;
++  location: string;
++  nightlyPrice: number;
++  images?: string[];
++  websiteUrl?: string | null;
++  latitude?: number | string | null;
++  longitude?: number | string | null;
++}
++
++function MapView({ properties }: { properties: MapProperty[] }) {
++  const mapRef = useRef<HTMLDivElement>(null);
++  const leafletMapRef = useRef<any>(null);
++  const [selectedProperty, setSelectedProperty] = useState<MapProperty | null>(null);
++
++  const mappable = properties.filter(
++    (p) => p.latitude != null && p.longitude != null
++  );
++
++  const propertyKey = properties.map((p) => p.id).join(",");
++
++  useEffect(() => {
++    if (!mapRef.current) return;
++
++    // Dynamically import Leaflet to avoid SSR/vite icon issues
++    import("leaflet").then((L) => {
++      // Leaflet CSS must be loaded too
++      const link = document.createElement("link");
++      link.rel = "stylesheet";
++      link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
++      if (!document.head.querySelector('link[href*="leaflet"]')) {
++        document.head.appendChild(link);
++      }
++
++      // Destroy existing map before re-mounting
++      if (leafletMapRef.current) {
++        leafletMapRef.current.remove();
++        leafletMapRef.current = null;
++      }
++
++      const map = L.map(mapRef.current!, {
++        center: [54.0, -2.5],
++        zoom: 6,
++      });
++      leafletMapRef.current = map;
++
++      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
++        attribution:
++          '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
++        maxZoom: 19,
++      }).addTo(map);
++
++      // Brand-coloured custom pin (no broken image issue)
++      const pinIcon = L.divIcon({
++        className: "",
++        html: `<div style="width:14px;height:14px;background:#2d5a27;border:2.5px solid #fff;border-radius:50%;box-shadow:0 1px 5px rgba(0,0,0,.35)"></div>`,
++        iconSize: [14, 14],
++        iconAnchor: [7, 7],
++      });
++
++      const latlngs: [number, number][] = [];
++
++      mappable.forEach((p) => {
++        const lat = typeof p.latitude === "string" ? parseFloat(p.latitude) : (p.latitude as number);
++        const lng = typeof p.longitude === "string" ? parseFloat(p.longitude) : (p.longitude as number);
++        if (isNaN(lat) || isNaN(lng)) return;
++
++        latlngs.push([lat, lng]);
++        const marker = L.marker([lat, lng], { icon: pinIcon }).addTo(map);
++        marker.on("click", () => setSelectedProperty(p));
++      });
++
++      if (latlngs.length > 0) {
++        map.fitBounds(latlngs, { padding: [40, 40], maxZoom: 12 });
++      }
++    });
++
++    return () => {
++      if (leafletMapRef.current) {
++        leafletMapRef.current.remove();
++        leafletMapRef.current = null;
++      }
++    };
++  // eslint-disable-next-line react-hooks/exhaustive-deps
++  }, [propertyKey]);
++
++  const unmapped = properties.length - mappable.length;
++
++  return (
++    <div className="space-y-3">
++      {unmapped > 0 && (
++        <p className="text-xs text-muted-foreground">
++          {mappable.length} of {properties.length} properties have map coordinates.{" "}
++          <span className="italic">Add coordinates via the admin dashboard to show the rest.</span>
++        </p>
++      )}
++
++      <div className="relative">
++        <div ref={mapRef} className="w-full rounded-none border border-border" style={{ height: 580 }} />
++
++        {/* Property popup */}
++        {selectedProperty && (
++          <div className="absolute bottom-4 left-4 w-72 bg-white border border-border shadow-xl z-[1000]">
++            <button
++              className="absolute top-2 right-2.5 text-muted-foreground hover:text-foreground text-xl leading-none z-10"
++              onClick={() => setSelectedProperty(null)}
++              aria-label="Close"
++            >
++              ×
++            </button>
++            {selectedProperty.images?.[0] && (
++              <div className="aspect-[4/3] overflow-hidden">
++                <img
++                  src={selectedProperty.images[0]}
++                  alt={selectedProperty.name}
++                  className="w-full h-full object-cover"
++                />
++              </div>
++            )}
++            <div className="p-4">
++              <p className="text-xs uppercase tracking-widest text-muted-foreground mb-1">
++                {selectedProperty.category}
++              </p>
++              <h3 className="font-serif text-lg leading-tight mb-1">
++                {selectedProperty.name}
++              </h3>
++              <p className="text-sm text-muted-foreground mb-2">
++                {selectedProperty.location}
++              </p>
++              <p className="text-sm font-medium">
++                From £{Number(selectedProperty.nightlyPrice).toLocaleString()}
++                <span className="text-muted-foreground font-normal">/night</span>
++              </p>
++              {selectedProperty.websiteUrl && (
++                <a
++                  href={selectedProperty.websiteUrl}
++                  target="_blank"
++                  rel="noopener noreferrer"
++                  className="mt-3 inline-block text-xs uppercase tracking-widest border-b border-foreground hover:border-foreground/50 transition-colors"
++                >
++                  Visit website →
++                </a>
++              )}
++            </div>
++          </div>
++        )}
++      </div>
++    </div>
++  );
++}
+diff --git a/artifacts/wellnest/src/pages/Home.tsx b/artifacts/wellnest/src/pages/Home.tsx
+index 33c9d08..c0413a0 100644
+--- a/artifacts/wellnest/src/pages/Home.tsx
++++ b/artifacts/wellnest/src/pages/Home.tsx
+@@ -122,15 +122,17 @@ export function Home() {
+             Each season we curate one extraordinary retreat per category — chosen for those who value rest and renewal.
+           </p>
+           <div className="pt-2 flex flex-col items-center gap-2">
++            <Link href="/finder">
++              <button className="bg-white text-foreground hover:bg-white/90 transition-colors px-10 py-3 text-xs tracking-widest uppercase font-medium">
++                Find Your Perfect Stay
++              </button>
++            </Link>
+             <button
+               onClick={() => setNewsletterOpen(true)}
+-              className="bg-white text-foreground hover:bg-white/90 transition-colors px-10 py-3 text-xs tracking-widest uppercase font-medium"
++              className="text-white/65 text-xs font-bold tracking-wide underline underline-offset-2 hover:text-white/90 transition-colors"
+             >
+-              Join The WellNest Collection
+-            </button>
+-            <p className="text-white/65 text-xs font-bold tracking-wide">
+               Subscribe to our free seasonal newsletter
+-            </p>
++            </button>
+           </div>
+         </div>
+       </section>
+diff --git a/lib/db/src/schema/properties.ts b/lib/db/src/schema/properties.ts
+index c33f96b..35c0f08 100644
+--- a/lib/db/src/schema/properties.ts
++++ b/lib/db/src/schema/properties.ts
+@@ -18,6 +18,8 @@ export const propertiesTable = pgTable("properties", {
+   featured: boolean("featured").notNull().default(false),
+   pickSeason: text("pick_season"),
+   pickYear: integer("pick_year"),
++  latitude: numeric("latitude", { precision: 10, scale: 7 }),
++  longitude: numeric("longitude", { precision: 10, scale: 7 }),
+   createdAt: timestamp("created_at").notNull().defaultNow(),
+   updatedAt: timestamp("updated_at").notNull().defaultNow(),
+ });
+-- 
+2.43.0
+
