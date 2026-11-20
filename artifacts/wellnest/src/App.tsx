@@ -18,15 +18,18 @@ import { useAdminMe } from "@workspace/api-client-react";
 
 function ProtectedAdminRoute({ children }: { children: React.ReactNode }) {
   const [, setLocation] = useLocation();
-  const { data: adminSession, isLoading } = useAdminMe();
+  // isFetching covers background refetches (e.g. right after login invalidates the cache)
+  const { data: adminSession, isLoading, isFetching } = useAdminMe();
 
   useEffect(() => {
-    if (!isLoading && !adminSession?.authenticated) {
+    // Don't redirect while a fresh fetch is in-flight — the stale cache
+    // may still show authenticated:false immediately after login.
+    if (!isLoading && !isFetching && !adminSession?.authenticated) {
       setLocation("/admin");
     }
-  }, [isLoading, adminSession, setLocation]);
+  }, [isLoading, isFetching, adminSession, setLocation]);
 
-  if (isLoading) {
+  if (isLoading || isFetching) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
