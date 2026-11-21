@@ -10,6 +10,11 @@ import { logger } from "./lib/logger";
 
 const app: Express = express();
 
+// Railway terminates TLS at the load balancer and forwards requests to Express
+// over plain HTTP internally. Without this, req.secure is false and
+// express-session refuses to set cookies with secure:true.
+app.set("trust proxy", 1);
+
 app.use(
   pinoHttp({
     logger,
