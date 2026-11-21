@@ -336,40 +336,35 @@ function MapView({ properties }: { properties: MapProperty[] }) {
             >
               ×
             </button>
-            {selectedProperty.images?.[0] && (
-              <div className="aspect-[4/3] overflow-hidden">
-                <img
-                  src={selectedProperty.images[0]}
-                  alt={selectedProperty.name}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            )}
-            <div className="p-4">
-              <p className="text-xs uppercase tracking-widest text-muted-foreground mb-1">
-                {selectedProperty.category}
-              </p>
-              <h3 className="font-serif text-lg leading-tight mb-1">
-                {selectedProperty.name}
-              </h3>
-              <p className="text-sm text-muted-foreground mb-2">
-                {selectedProperty.location}
-              </p>
-              <p className="text-sm font-medium">
-                From £{Number(selectedProperty.nightlyPrice).toLocaleString()}
-                <span className="text-muted-foreground font-normal">/night</span>
-              </p>
-              {selectedProperty.websiteUrl && (
-                <a
-                  href={selectedProperty.websiteUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-3 inline-block text-xs uppercase tracking-widest border-b border-foreground hover:border-foreground/50 transition-colors"
-                >
-                  Visit website →
-                </a>
+            <a href={`/properties/${selectedProperty.id}`} className="block group">
+              {selectedProperty.images?.[0] && (
+                <div className="aspect-[4/3] overflow-hidden">
+                  <img
+                    src={selectedProperty.images[0]}
+                    alt={selectedProperty.name}
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                </div>
               )}
-            </div>
+              <div className="p-4">
+                <p className="text-xs uppercase tracking-widest text-muted-foreground mb-1">
+                  {selectedProperty.category}
+                </p>
+                <h3 className="font-serif text-lg leading-tight mb-1 group-hover:underline underline-offset-2">
+                  {selectedProperty.name}
+                </h3>
+                <p className="text-sm text-muted-foreground mb-2">
+                  {selectedProperty.location}
+                </p>
+                <p className="text-sm font-medium">
+                  From £{Number(selectedProperty.nightlyPrice).toLocaleString()}
+                  <span className="text-muted-foreground font-normal">/night</span>
+                </p>
+                <span className="mt-3 inline-block text-xs uppercase tracking-widest border-b border-foreground group-hover:border-foreground/50 transition-colors">
+                  View listing →
+                </span>
+              </div>
+            </a>
           </div>
         )}
       </div>
