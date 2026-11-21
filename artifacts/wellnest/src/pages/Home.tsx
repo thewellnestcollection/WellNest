@@ -270,7 +270,7 @@ export function Home() {
       </section>
 
       {/* Finder CTA */}
-      <section className="py-20 bg-[#f5f0eb] border-t border-border">
+      <section className="py-20 bg-secondary border-t border-border">
         <div className="container mx-auto px-4 md:px-6 text-center max-w-2xl">
           <p className="text-xs uppercase tracking-widest text-muted-foreground mb-3">WellNest Finder</p>
           <h2 className="font-serif text-3xl md:text-4xl mb-4">Not sure where to start?</h2>
@@ -286,7 +286,7 @@ export function Home() {
       </section>
 
       {/* About */}
-      <section className="py-24 bg-white border-t border-border">
+      <section className="py-24 bg-background border-t border-border">
         <div className="container mx-auto px-4 md:px-6">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div className="relative aspect-[3/4] md:aspect-square bg-muted overflow-hidden">

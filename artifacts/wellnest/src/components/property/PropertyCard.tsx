@@ -56,7 +56,7 @@ export function PropertyCard({ property, showCategory, showSeasonBadge }: Proper
           </div>
         )}
         {seasonBadgeText && (
-          <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2.5 py-1 text-[10px] font-medium tracking-widest uppercase text-foreground">
+          <div className="absolute top-3 right-3 bg-background/90 backdrop-blur-sm px-2.5 py-1 text-[10px] font-medium tracking-widest uppercase text-foreground">
             {seasonBadgeText}
           </div>
         )}

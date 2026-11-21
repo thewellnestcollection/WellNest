@@ -22,7 +22,7 @@ function InstagramIcon({ className }: { className?: string }) {
 
 export function Footer() {
   return (
-    <footer className="border-t bg-white py-16 mt-24">
+    <footer className="border-t bg-background py-16 mt-24">
       <div className="container mx-auto px-4 md:px-6 flex flex-col items-center justify-center space-y-8">
         <Link href="/" className="transition-opacity hover:opacity-80">
           <img src={logoUrl} alt="The WellNest Collection" className="h-32 w-auto opacity-90" />

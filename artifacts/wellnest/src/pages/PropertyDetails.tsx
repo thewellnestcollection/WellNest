@@ -87,7 +87,7 @@ export function PropertyDetails() {
     <article className="min-h-screen bg-background pb-24">
       {/* Back Link */}
       <div className="fixed top-44 left-4 md:left-8 z-20">
-        <Link href="/collection" className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/80 backdrop-blur-sm hover:bg-white text-foreground transition-colors shadow-sm">
+        <Link href="/collection" className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-background/80 backdrop-blur-sm hover:bg-background text-foreground transition-colors shadow-sm">
           <ChevronLeft className="w-5 h-5" />
         </Link>
       </div>
@@ -112,7 +112,7 @@ export function PropertyDetails() {
 
       <div className="container mx-auto px-4 md:px-6 max-w-5xl -mt-24 relative z-10">
         {/* Header Card */}
-        <div className="bg-white p-8 md:p-12 shadow-xl mb-12">
+        <div className="bg-card p-8 md:p-12 shadow-xl mb-12">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
             <div className="space-y-4 flex-1">
               <div className="flex flex-wrap items-center gap-2">

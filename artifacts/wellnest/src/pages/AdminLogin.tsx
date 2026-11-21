@@ -56,7 +56,7 @@ export function AdminLogin() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-8 bg-white p-8 md:p-12 shadow-xl">
+      <div className="w-full max-w-md space-y-8 bg-card p-8 md:p-12 shadow-xl">
         <div className="flex flex-col items-center text-center space-y-6">
           <img src={logoUrl} alt="The WellNest Collection" className="h-16 w-auto" />
           <div className="space-y-2">

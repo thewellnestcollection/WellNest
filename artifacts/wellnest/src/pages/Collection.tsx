@@ -101,7 +101,7 @@ export function Collection() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <div className="bg-white border-b py-12 md:py-16">
+      <div className="bg-background border-b py-12 md:py-16">
         <div className="container mx-auto px-4 md:px-6 max-w-5xl text-center space-y-4">
           <h1 className="text-4xl md:text-5xl font-serif">The Collection</h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto font-light">
@@ -155,7 +155,7 @@ export function Collection() {
                   <Input
                     type="text"
                     placeholder="Search by name or location..."
-                    className="pl-9 bg-white border-muted-foreground/20 rounded-none focus-visible:ring-primary h-9 text-sm"
+                    className="pl-9 bg-background border-muted-foreground/20 rounded-none focus-visible:ring-primary h-9 text-sm"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
@@ -164,7 +164,7 @@ export function Collection() {
                   <div className="flex items-center gap-2 shrink-0">
                     <span className="text-xs text-muted-foreground uppercase tracking-widest whitespace-nowrap hidden sm:block">Sort by</span>
                     <Select value={sortOption} onValueChange={(v) => setSortOption(v as SortOption)}>
-                      <SelectTrigger className="w-48 rounded-none border-muted-foreground/20 bg-white text-sm h-9">
+                      <SelectTrigger className="w-48 rounded-none border-muted-foreground/20 bg-background text-sm h-9">
                         <SelectValue placeholder="Default" />
                       </SelectTrigger>
                       <SelectContent className="rounded-none">
@@ -328,7 +328,7 @@ function MapView({ properties }: { properties: MapProperty[] }) {
 
         {/* Property popup */}
         {selectedProperty && (
-          <div className="absolute bottom-4 left-4 w-72 bg-white border border-border shadow-xl z-[1000]">
+          <div className="absolute bottom-4 left-4 w-72 bg-card border border-border shadow-xl z-[1000]">
             <button
               className="absolute top-2 right-2.5 text-muted-foreground hover:text-foreground text-xl leading-none z-10"
               onClick={() => setSelectedProperty(null)}

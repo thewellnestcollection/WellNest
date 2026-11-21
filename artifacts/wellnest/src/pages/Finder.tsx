@@ -289,9 +289,9 @@ export function Finder() {
   // ─────────────────────────────────────────────────────────────────────────────
 
   return (
-    <main className="flex-1 bg-[#f9f6f2] min-h-screen">
+    <main className="flex-1 bg-background min-h-screen">
       {/* Header strip */}
-      <div className="bg-white border-b border-border py-10 text-center">
+      <div className="bg-background border-b border-border py-10 text-center">
         <p className="text-xs uppercase tracking-widest text-muted-foreground mb-2">WellNest Finder</p>
         <h1 className="font-serif text-3xl md:text-4xl">Find your perfect stay</h1>
         <p className="text-muted-foreground font-light mt-2 text-sm">
@@ -502,7 +502,7 @@ export function Finder() {
                   placeholder="First name (optional)"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
-                  className="rounded-none h-12 border-border bg-white"
+                  className="rounded-none h-12 border-border bg-background"
                 />
               </div>
               <div>
@@ -511,14 +511,14 @@ export function Finder() {
                   placeholder="Your email address *"
                   value={email}
                   onChange={(e) => { setEmail(e.target.value); setEmailError(""); }}
-                  className={cn("rounded-none h-12 bg-white", emailError ? "border-destructive" : "border-border")}
+                  className={cn("rounded-none h-12 bg-background", emailError ? "border-destructive" : "border-border")}
                   required
                 />
                 {emailError && <p className="text-destructive text-xs mt-1">{emailError}</p>}
               </div>
 
               {/* GDPR consent checkbox */}
-              <div className={cn("flex items-start gap-3 p-4 border", consentError ? "border-destructive/50 bg-destructive/5" : "border-border bg-white")}>
+              <div className={cn("flex items-start gap-3 p-4 border", consentError ? "border-destructive/50 bg-destructive/5" : "border-border bg-background")}>
                 <input
                   type="checkbox"
                   id="consent"
