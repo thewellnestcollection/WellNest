@@ -43,7 +43,13 @@ router.post("/admin/login", async (req, res): Promise<void> => {
   }
 
   req.session.adminAuthenticated = true;
-  res.json(AdminLoginResponse.parse({ success: true, message: "Logged in" }));
+  req.session.save((err) => {
+    if (err) {
+      res.status(500).json({ error: "Session save failed" });
+      return;
+    }
+    res.json(AdminLoginResponse.parse({ success: true, message: "Logged in" }));
+  });
 });
 
 router.post("/admin/logout", async (req, res): Promise<void> => {
