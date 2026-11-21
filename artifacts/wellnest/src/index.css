@@ -128,39 +128,54 @@
 }
 
 .dark {
-  /* Force light mode / same cream colours */
-  --button-outline: rgba(0,0,0, .10);
-  --badge-outline: rgba(0,0,0, .05);
-  --elevate-1: rgba(0,0,0, .03);
-  --elevate-2: rgba(0,0,0, .08);
-  --background: 30 30% 94%;
-  --foreground: 101 7% 19%;
-  --border: 30 20% 88%;
-  --card: 30 40% 97%;
-  --card-foreground: 101 7% 19%;
-  --card-border: 30 20% 88%;
-  --popover: 30 40% 97%;
-  --popover-foreground: 101 7% 19%;
-  --popover-border: 30 20% 88%;
+  /* NIGHT MODE — deep forest tones, 7pm–7am UK */
+  --button-outline: rgba(255,255,255, .12);
+  --badge-outline: rgba(255,255,255, .08);
+  --opaque-button-border-intensity: 8;
+  --elevate-1: rgba(255,255,255, .04);
+  --elevate-2: rgba(255,255,255, .08);
+
+  /* Deep forest green background ~#191e17 */
+  --background: 101 8% 10%;
+  /* Warm cream text ~#EAE5DF */
+  --foreground: 30 15% 91%;
+
+  --border: 101 7% 22%;
+
+  --card: 101 8% 13%;
+  --card-foreground: 30 15% 91%;
+  --card-border: 101 7% 22%;
+
+  --popover: 101 8% 13%;
+  --popover-foreground: 30 15% 91%;
+  --popover-border: 101 7% 22%;
+
+  /* Sage stays the same */
   --primary: 101 10% 53%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 30 20% 87%;
-  --secondary-foreground: 101 7% 19%;
-  --muted: 30 22% 91%;
-  --muted-foreground: 101 3% 44%;
-  --accent: 30 22% 91%;
-  --accent-foreground: 101 7% 19%;
-  --destructive: 0 35% 50%;
+
+  --secondary: 101 8% 17%;
+  --secondary-foreground: 30 15% 91%;
+
+  --muted: 101 8% 18%;
+  --muted-foreground: 101 5% 55%;
+
+  --accent: 101 8% 18%;
+  --accent-foreground: 30 15% 91%;
+
+  --destructive: 0 35% 45%;
   --destructive-foreground: 0 0% 100%;
-  --input: 30 20% 87%;
+
+  --input: 101 7% 22%;
   --ring: 101 10% 53%;
-  --sidebar: 30 30% 94%;
-  --sidebar-foreground: 101 7% 19%;
-  --sidebar-border: 30 20% 88%;
+
+  --sidebar: 101 8% 10%;
+  --sidebar-foreground: 30 15% 91%;
+  --sidebar-border: 101 7% 22%;
   --sidebar-primary: 101 10% 53%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 30 22% 91%;
-  --sidebar-accent-foreground: 101 7% 19%;
+  --sidebar-accent: 101 8% 17%;
+  --sidebar-accent-foreground: 30 15% 91%;
   --sidebar-ring: 101 10% 53%;
 }
 

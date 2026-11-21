@@ -44,13 +44,16 @@ interface Property {
 
 // ─── Quiz data ─────────────────────────────────────────────────────────────────
 
+import { Waves, Mountain, Heart, Home as HomeIcon, User, Wheat, TreePine, MapPin, Navigation, Flame, Layers, Landmark, Leaf, Users, PartyPopper, Droplets, Dog, WifiOff } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+
 const MUST_HAVE_OPTIONS = [
-  { id: "hot-tub", label: "Hot tub", icon: "♨" },
-  { id: "dog-friendly", label: "Dog friendly", icon: "🐾" },
-  { id: "open-fire", label: "Open fire", icon: "🔥" },
-  { id: "off-grid", label: "Off-grid / no-wifi", icon: "📵" },
-  { id: "garden", label: "Garden / outdoor space", icon: "🌿" },
-  { id: "pool", label: "Pool / wild swimming", icon: "🏊" },
+  { id: "hot-tub", label: "Hot tub", Icon: Droplets },
+  { id: "dog-friendly", label: "Dog friendly", Icon: Dog },
+  { id: "open-fire", label: "Open fire", Icon: Flame },
+  { id: "off-grid", label: "Off-grid / no-wifi", Icon: WifiOff },
+  { id: "garden", label: "Garden / outdoor space", Icon: TreePine },
+  { id: "pool", label: "Pool / wild swimming", Icon: Waves },
 ];
 
 // ─── Matching logic ─────────────────────────────────────────────────────────────
@@ -131,12 +134,12 @@ function budgetToNumbers(budget: Budget): { min?: number; max?: number } {
 interface OptionButtonProps {
   selected: boolean;
   onClick: () => void;
-  icon?: string;
+  Icon?: LucideIcon;
   label: string;
   description?: string;
 }
 
-function OptionButton({ selected, onClick, icon, label, description }: OptionButtonProps) {
+function OptionButton({ selected, onClick, Icon, label, description }: OptionButtonProps) {
   return (
     <button
       type="button"
@@ -148,7 +151,7 @@ function OptionButton({ selected, onClick, icon, label, description }: OptionBut
           : "bg-transparent text-foreground border-border hover:border-foreground/40"
       )}
     >
-      {icon && <span className="text-xl mb-1" style={{ filter: "grayscale(1) opacity(0.65)" }}>{icon}</span>}
+      {Icon && <Icon className={cn("w-5 h-5 stroke-[1.5] mb-1", selected ? "text-background" : "text-primary")} />}
       <span className="text-sm font-medium">{label}</span>
       {description && (
         <span className={cn("text-xs leading-snug", selected ? "text-background/70" : "text-muted-foreground")}>
@@ -306,17 +309,17 @@ export function Finder() {
             <h2 className="font-serif text-2xl mb-8">What kind of experience are you looking for?</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {[
-                { value: "rest" as Experience, icon: "🌿", label: "Rest & relaxation", description: "Slow down, switch off, recover" },
-                { value: "adventure" as Experience, icon: "🧗", label: "Adventure & activities", description: "Hiking, cycling, wild swimming" },
-                { value: "romance" as Experience, icon: "🕯", label: "Romantic escape", description: "Just the two of you" },
-                { value: "family" as Experience, icon: "👨‍👩‍👧", label: "Family getaway", description: "Space for everyone" },
-                { value: "solo" as Experience, icon: "🧘", label: "Solo retreat", description: "Time for yourself" },
+                { value: "rest" as Experience, Icon: Waves, label: "Rest & relaxation", description: "Slow down, switch off, recover" },
+                { value: "adventure" as Experience, Icon: Mountain, label: "Adventure & activities", description: "Hiking, cycling, wild swimming" },
+                { value: "romance" as Experience, Icon: Heart, label: "Romantic escape", description: "Just the two of you" },
+                { value: "family" as Experience, Icon: HomeIcon, label: "Family getaway", description: "Space for everyone" },
+                { value: "solo" as Experience, Icon: User, label: "Solo retreat", description: "Time for yourself" },
               ].map((opt) => (
                 <OptionButton
                   key={opt.value}
                   selected={answers.experience === opt.value}
                   onClick={() => pick("experience", opt.value)}
-                  icon={opt.icon}
+                  Icon={opt.Icon}
                   label={opt.label}
                   description={opt.description}
                 />
@@ -333,17 +336,17 @@ export function Finder() {
             <h2 className="font-serif text-2xl mb-8">Where do you prefer to be?</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {[
-                { value: "countryside" as Location, icon: "🌾", label: "Open countryside", description: "Rolling hills, farmland, open skies" },
-                { value: "coast" as Location, icon: "🌊", label: "Coastal", description: "Sea views, cliffs, rock pools" },
-                { value: "woodland" as Location, icon: "🌲", label: "Woodland / forest", description: "Trees, birdsong, dappled light" },
-                { value: "village" as Location, icon: "🏡", label: "Village / town", description: "Local pubs, cafés, community feel" },
-                { value: "remote" as Location, icon: "🏔", label: "Somewhere remote", description: "Off the grid, away from it all" },
+                { value: "countryside" as Location, Icon: Wheat, label: "Open countryside", description: "Rolling hills, farmland, open skies" },
+                { value: "coast" as Location, Icon: Waves, label: "Coastal", description: "Sea views, cliffs, rock pools" },
+                { value: "woodland" as Location, Icon: TreePine, label: "Woodland / forest", description: "Trees, birdsong, dappled light" },
+                { value: "village" as Location, Icon: MapPin, label: "Village / town", description: "Local pubs, cafés, community feel" },
+                { value: "remote" as Location, Icon: Navigation, label: "Somewhere remote", description: "Off the grid, away from it all" },
               ].map((opt) => (
                 <OptionButton
                   key={opt.value}
                   selected={answers.location === opt.value}
                   onClick={() => pick("location", opt.value)}
-                  icon={opt.icon}
+                  Icon={opt.Icon}
                   label={opt.label}
                   description={opt.description}
                 />
@@ -361,16 +364,16 @@ export function Finder() {
             <h2 className="font-serif text-2xl mb-8">What's your style?</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {[
-                { value: "rustic" as Style, icon: "🪵", label: "Rustic & cosy", description: "Exposed beams, log fires, worn-in charm" },
-                { value: "modern" as Style, icon: "🏛", label: "Modern & minimal", description: "Clean lines, design-led, calm spaces" },
-                { value: "historic" as Style, icon: "🏰", label: "Historic & characterful", description: "Old walls, rich history, period features" },
-                { value: "eco" as Style, icon: "🌱", label: "Eco & sustainable", description: "Low impact, nature-first, off-grid options" },
+                { value: "rustic" as Style, Icon: Flame, label: "Rustic & cosy", description: "Exposed beams, log fires, worn-in charm" },
+                { value: "modern" as Style, Icon: Layers, label: "Modern & minimal", description: "Clean lines, design-led, calm spaces" },
+                { value: "historic" as Style, Icon: Landmark, label: "Historic & characterful", description: "Old walls, rich history, period features" },
+                { value: "eco" as Style, Icon: Leaf, label: "Eco & sustainable", description: "Low impact, nature-first, off-grid options" },
               ].map((opt) => (
                 <OptionButton
                   key={opt.value}
                   selected={answers.style === opt.value}
                   onClick={() => pick("style", opt.value)}
-                  icon={opt.icon}
+                  Icon={opt.Icon}
                   label={opt.label}
                   description={opt.description}
                 />
@@ -388,16 +391,16 @@ export function Finder() {
             <h2 className="font-serif text-2xl mb-8">How many guests?</h2>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
-                { value: 1, label: "Just me", icon: "👤" },
-                { value: 2, label: "2 people", icon: "👥" },
-                { value: 4, label: "3–4 people", icon: "👨‍👩‍👧" },
-                { value: 6, label: "5+ people", icon: "🎉" },
+                { value: 1, label: "Just me", Icon: User },
+                { value: 2, label: "2 people", Icon: Users },
+                { value: 4, label: "3–4 people", Icon: Users },
+                { value: 6, label: "5+ people", Icon: PartyPopper },
               ].map((opt) => (
                 <OptionButton
                   key={opt.value}
                   selected={answers.guests === opt.value}
                   onClick={() => pick("guests", opt.value)}
-                  icon={opt.icon}
+                  Icon={opt.Icon}
                   label={opt.label}
                 />
               ))}
@@ -440,22 +443,25 @@ export function Finder() {
             <h2 className="font-serif text-2xl mb-2">Any must-haves?</h2>
             <p className="text-sm text-muted-foreground mb-8">Select all that apply — or skip if you're flexible.</p>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-8">
-              {MUST_HAVE_OPTIONS.map((opt) => (
-                <button
-                  key={opt.id}
-                  type="button"
-                  onClick={() => toggleMustHave(opt.id)}
-                  className={cn(
-                    "flex items-center gap-2.5 px-4 py-3.5 border text-sm transition-all duration-150",
-                    answers.mustHaves.includes(opt.id)
-                      ? "bg-foreground text-background border-foreground"
-                      : "bg-transparent text-foreground border-border hover:border-foreground/40"
-                  )}
-                >
-                  <span className="text-base" style={{ filter: "grayscale(1) opacity(0.65)" }}>{opt.icon}</span>
-                  <span className="font-medium">{opt.label}</span>
-                </button>
-              ))}
+              {MUST_HAVE_OPTIONS.map((opt) => {
+                const isActive = answers.mustHaves.includes(opt.id);
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => toggleMustHave(opt.id)}
+                    className={cn(
+                      "flex items-center gap-2.5 px-4 py-3.5 border text-sm transition-all duration-150",
+                      isActive
+                        ? "bg-foreground text-background border-foreground"
+                        : "bg-transparent text-foreground border-border hover:border-foreground/40"
+                    )}
+                  >
+                    <opt.Icon className={cn("w-4 h-4 stroke-[1.5]", isActive ? "text-background" : "text-primary")} />
+                    <span className="font-medium">{opt.label}</span>
+                  </button>
+                );
+              })}
             </div>
             <div className="flex gap-3">
               <Button

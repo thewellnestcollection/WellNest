@@ -5,6 +5,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { NewsletterModal } from "@/components/NewsletterModal";
+import { Snowflake, Flower2, Sun, Leaf } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 type SeasonName = "winter" | "spring" | "summer" | "autumn";
 
@@ -39,11 +41,20 @@ interface Property {
   updatedAt: string;
 }
 
-const SEASON_ICONS: Record<SeasonName, string> = {
+/** Emoji used in mobile <select> option text (plain string, not JSX). */
+const SEASON_EMOJIS: Record<SeasonName, string> = {
   winter: "❄️",
   spring: "🌸",
   summer: "☀️",
   autumn: "🍂",
+};
+
+/** Lucide icons for desktop pills — coloured via text-* classes. */
+const SEASON_ICONS: Record<SeasonName, LucideIcon> = {
+  winter: Snowflake,
+  spring: Flower2,
+  summer: Sun,
+  autumn: Leaf,
 };
 
 async function fetchAvailableSeasons(): Promise<AvailableSeasonsResponse> {
@@ -164,7 +175,7 @@ export function Home() {
               >
                 {[...seasons].reverse().map((s) => (
                   <option key={`${s.season}-${s.year}`} value={`${s.season}-${s.year}`}>
-                    {SEASON_ICONS[s.season as SeasonName]} {s.label}
+                    {SEASON_EMOJIS[s.season as SeasonName]} {s.label}
                   </option>
                 ))}
               </select>
@@ -187,12 +198,10 @@ export function Home() {
                         : "bg-transparent text-muted-foreground border-border hover:border-foreground/40 hover:text-foreground"
                     }`}
                   >
-                    <span
-                      className="text-sm leading-none"
-                      style={s.season === "autumn" ? { filter: "grayscale(1) opacity(0.65)" } : undefined}
-                    >
-                      {SEASON_ICONS[s.season as SeasonName]}
-                    </span>
+                    {(() => {
+                      const Icon = SEASON_ICONS[s.season as SeasonName];
+                      return <Icon className={`w-3.5 h-3.5 stroke-[1.5] ${isActive ? "text-background" : "text-primary"}`} />;
+                    })()}
                     <span>{s.label}</span>
                   </button>
                 );

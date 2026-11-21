@@ -1,6 +1,7 @@
 import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useTimeTheme } from "@/hooks/useTimeTheme";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
@@ -42,6 +43,20 @@ function ProtectedAdminRoute({ children }: { children: React.ReactNode }) {
   }
 
   return <>{children}</>;
+}
+
+/** Applies/removes `.dark` on <html> based on UK time (7am–7pm = day). */
+function ThemeManager() {
+  const theme = useTimeTheme();
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === "night") {
+      root.classList.add("dark");
+    } else {
+      root.classList.remove("dark");
+    }
+  }, [theme]);
+  return null;
 }
 
 function ScrollToTop() {
@@ -103,6 +118,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
+        <ThemeManager />
         <WouterRouter base="">
           <Router />
         </WouterRouter>
