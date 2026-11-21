@@ -148,7 +148,7 @@ function OptionButton({ selected, onClick, icon, label, description }: OptionBut
           : "bg-transparent text-foreground border-border hover:border-foreground/40"
       )}
     >
-      {icon && <span className="text-xl mb-1">{icon}</span>}
+      {icon && <span className="text-xl mb-1" style={{ filter: "grayscale(1) opacity(0.65)" }}>{icon}</span>}
       <span className="text-sm font-medium">{label}</span>
       {description && (
         <span className={cn("text-xs leading-snug", selected ? "text-background/70" : "text-muted-foreground")}>
@@ -452,7 +452,7 @@ export function Finder() {
                       : "bg-transparent text-foreground border-border hover:border-foreground/40"
                   )}
                 >
-                  <span className="text-base">{opt.icon}</span>
+                  <span className="text-base" style={{ filter: "grayscale(1) opacity(0.65)" }}>{opt.icon}</span>
                   <span className="font-medium">{opt.label}</span>
                 </button>
               ))}
