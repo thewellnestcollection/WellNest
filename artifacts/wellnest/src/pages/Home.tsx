@@ -134,7 +134,7 @@ export function Home() {
           </p>
           <div className="pt-2 flex flex-col items-center gap-2">
             <Link href="/finder">
-              <button className="bg-white text-foreground hover:bg-white/90 transition-colors px-10 py-3 text-xs tracking-widest uppercase font-medium">
+              <button className="bg-white text-[#2D3826] hover:bg-white/90 transition-colors px-10 py-3 text-xs tracking-widest uppercase font-medium">
                 Find Your Perfect Stay
               </button>
             </Link>
