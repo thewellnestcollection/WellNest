@@ -33,6 +33,8 @@ router.get("/properties", async (req, res): Promise<void> => {
   const result = properties.map((p) => ({
     ...p,
     nightlyPrice: parseFloat(p.nightlyPrice),
+    latitude: p.latitude != null ? parseFloat(p.latitude) : null,
+    longitude: p.longitude != null ? parseFloat(p.longitude) : null,
     createdAt: p.createdAt.toISOString(),
     updatedAt: p.updatedAt.toISOString(),
   }));
@@ -131,6 +133,8 @@ router.get("/properties/:id", async (req, res): Promise<void> => {
     GetPropertyResponse.parse({
       ...property,
       nightlyPrice: parseFloat(property.nightlyPrice),
+      latitude: property.latitude != null ? parseFloat(property.latitude) : null,
+      longitude: property.longitude != null ? parseFloat(property.longitude) : null,
       createdAt: property.createdAt.toISOString(),
       updatedAt: property.updatedAt.toISOString(),
     })

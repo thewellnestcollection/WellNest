@@ -32,6 +32,8 @@ export const ListPropertiesResponseItem = zod.object({
   featured: zod.boolean(),
   pickSeason: zod.string().nullable(),
   pickYear: zod.number().nullable(),
+  latitude: zod.number().nullable(),
+  longitude: zod.number().nullable(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -65,6 +67,8 @@ export const GetPropertyResponse = zod.object({
   featured: zod.boolean(),
   pickSeason: zod.string().nullable(),
   pickYear: zod.number().nullable(),
+  latitude: zod.number().nullable(),
+  longitude: zod.number().nullable(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -120,6 +124,8 @@ export const AdminListPropertiesResponseItem = zod.object({
   featured: zod.boolean(),
   pickSeason: zod.string().nullable(),
   pickYear: zod.number().nullable(),
+  latitude: zod.number().nullable(),
+  longitude: zod.number().nullable(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });

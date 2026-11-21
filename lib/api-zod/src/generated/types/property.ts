@@ -27,6 +27,10 @@ export interface Property {
   pickSeason: string | null;
   /** @nullable */
   pickYear: number | null;
+  /** @nullable */
+  latitude?: number | null;
+  /** @nullable */
+  longitude?: number | null;
   createdAt: string;
   updatedAt: string;
 }
