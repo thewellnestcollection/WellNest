@@ -40,9 +40,9 @@ interface Property {
 }
 
 const SEASON_ICONS: Record<SeasonName, string> = {
-  winter: "❄",
-  spring: "✿",
-  summer: "☀",
+  winter: "❄️",
+  spring: "🌸",
+  summer: "☀️",
   autumn: "🍂",
 };
 
@@ -149,33 +149,56 @@ export function Home() {
             {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-9 w-28" />)}
           </div>
         ) : (
-          <div className="flex gap-1.5 flex-wrap mb-12">
-            {[...seasons].reverse().map((s) => {
-              const isActive = s.season === selectedSeason && s.year === selectedYear;
-              return (
-                <button
-                  key={`${s.season}-${s.year}`}
-                  onClick={() => {
-                    setSelectedSeason(s.season as SeasonName);
-                    setSelectedYear(s.year);
-                  }}
-                  className={`flex items-center gap-2 px-5 py-2.5 text-xs font-medium border transition-all duration-150 ${
-                    isActive
-                      ? "bg-foreground text-background border-foreground"
-                      : "bg-transparent text-muted-foreground border-border hover:border-foreground/40 hover:text-foreground"
-                  }`}
-                >
-                  <span
-                    className="text-sm leading-none"
-                    style={s.season === "autumn" ? { filter: "grayscale(1) opacity(0.65)" } : undefined}
+          <>
+            {/* Mobile: native dropdown */}
+            <div className="md:hidden mb-12">
+              <select
+                value={`${selectedSeason}-${selectedYear}`}
+                onChange={(e) => {
+                  const [season, year] = e.target.value.split("-");
+                  setSelectedSeason(season as SeasonName);
+                  setSelectedYear(parseInt(year, 10));
+                }}
+                className="w-full border border-border bg-background text-foreground text-sm font-medium px-4 py-3 appearance-none focus:outline-none focus:ring-1 focus:ring-foreground"
+                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 1rem center" }}
+              >
+                {[...seasons].reverse().map((s) => (
+                  <option key={`${s.season}-${s.year}`} value={`${s.season}-${s.year}`}>
+                    {SEASON_ICONS[s.season as SeasonName]} {s.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Desktop: pill buttons */}
+            <div className="hidden md:flex gap-1.5 flex-wrap mb-12">
+              {[...seasons].reverse().map((s) => {
+                const isActive = s.season === selectedSeason && s.year === selectedYear;
+                return (
+                  <button
+                    key={`${s.season}-${s.year}`}
+                    onClick={() => {
+                      setSelectedSeason(s.season as SeasonName);
+                      setSelectedYear(s.year);
+                    }}
+                    className={`flex items-center gap-2 px-5 py-2.5 text-xs font-medium border transition-all duration-150 ${
+                      isActive
+                        ? "bg-foreground text-background border-foreground"
+                        : "bg-transparent text-muted-foreground border-border hover:border-foreground/40 hover:text-foreground"
+                    }`}
                   >
-                    {SEASON_ICONS[s.season as SeasonName]}
-                  </span>
-                  <span>{s.label}</span>
-                </button>
-              );
-            })}
-          </div>
+                    <span
+                      className="text-sm leading-none"
+                      style={s.season === "autumn" ? { filter: "grayscale(1) opacity(0.65)" } : undefined}
+                    >
+                      {SEASON_ICONS[s.season as SeasonName]}
+                    </span>
+                    <span>{s.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </>
         )}
 
         {picksLoading ? (
