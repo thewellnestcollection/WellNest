@@ -151,9 +151,9 @@ export function Home() {
 
       {/* Seasonal Picks */}
       <section ref={picksRef} className="py-16 md:py-24 container mx-auto px-4 md:px-6">
-        <div className="hidden md:block mb-8">
+        <div className="mb-8">
           <p className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Seasonal Selection</p>
-          <div className="flex items-center gap-2.5">
+          <div className="hidden md:flex items-center gap-2.5">
             <span className="md:hidden">
               {(() => { const Icon = SEASON_ICONS[selectedSeason]; return <Icon className="w-6 h-6 stroke-[1.5] text-primary" />; })()}
             </span>
