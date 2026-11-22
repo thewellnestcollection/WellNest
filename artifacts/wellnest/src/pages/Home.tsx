@@ -151,7 +151,7 @@ export function Home() {
 
       {/* Seasonal Picks */}
       <section ref={picksRef} className="py-16 md:py-24 container mx-auto px-4 md:px-6">
-        <div className="mb-8">
+        <div className="hidden md:block mb-8">
           <p className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Seasonal Selection</p>
           <div className="flex items-center gap-2.5">
             <span className="md:hidden">
@@ -175,7 +175,7 @@ export function Home() {
                 onClick={() => setDropdownOpen(o => !o)}
                 className="w-full border border-border bg-background text-foreground text-sm font-medium px-4 py-3 flex items-center justify-between"
               >
-                <span>{selectedLabel}</span>
+                <span className="flex items-center gap-2.5">{(() => { const Icon = SEASON_ICONS[selectedSeason]; return <Icon className="w-3.5 h-3.5 stroke-[1.5] text-primary" />; })()}{selectedLabel}</span>
                 <ChevronDown className={`w-4 h-4 transition-transform duration-150 ${dropdownOpen ? "rotate-180" : ""}`} />
               </button>
               {dropdownOpen && (
@@ -194,7 +194,10 @@ export function Home() {
                           isActive ? "bg-foreground text-background" : "text-foreground hover:bg-muted"
                         }`}
                       >
-                        {s.label}
+                        <span className="flex items-center gap-2.5">
+                          {(() => { const Icon = SEASON_ICONS[s.season as SeasonName]; return <Icon className={`w-3.5 h-3.5 stroke-[1.5] ${isActive ? "text-background" : "text-primary"}`} />; })()}
+                          {s.label}
+                        </span>
                       </button>
                     );
                   })}
