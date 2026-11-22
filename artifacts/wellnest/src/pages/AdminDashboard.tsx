@@ -209,6 +209,22 @@ async function fetchFinderSubmissions(): Promise<FinderSubmission[]> {
   return res.json();
 }
 
+async function deleteNewsletterSubscriber(id: number): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/admin/newsletter-subscribers/${id}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Failed to delete subscriber");
+}
+
+async function deleteFinderSubmission(id: number): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/admin/finder-submissions/${id}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Failed to delete submission");
+}
+
 // ─── CSV helper ────────────────────────────────────────────────────────────────
 
 function downloadCsv(filename: string, headers: string[], rows: (string | number | boolean | null | undefined)[][]) {
@@ -723,9 +739,16 @@ function CollectionTab() {
 // ─── Newsletter Tab ────────────────────────────────────────────────────────────
 
 function NewsletterTab() {
+  const queryClient = useQueryClient();
+
   const { data: subscribers, isLoading, error } = useQuery({
     queryKey: ["admin-newsletter-subscribers"],
     queryFn: fetchNewsletterSubscribers,
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteNewsletterSubscriber,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-newsletter-subscribers"] }),
   });
 
   const handleDownloadCSV = () => {
@@ -764,8 +787,8 @@ function NewsletterTab() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border text-left">
-                {["Name", "Email", "Date Signed Up"].map((h) => (
-                  <th key={h} className="pb-3 pr-6 font-medium text-xs uppercase tracking-wider text-muted-foreground">{h}</th>
+                {["Name", "Email", "Date Signed Up", ""].map((h, i) => (
+                  <th key={i} className="pb-3 pr-6 font-medium text-xs uppercase tracking-wider text-muted-foreground">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -776,6 +799,15 @@ function NewsletterTab() {
                   <td className="py-4 pr-6 text-muted-foreground">{s.email}</td>
                   <td className="py-4 pr-6 text-muted-foreground">
                     {s.createdAt ? new Date(s.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "—"}
+                  </td>
+                  <td className="py-4">
+                    <Button
+                      variant="ghost" size="sm"
+                      onClick={() => { if (confirm(`Remove ${s.email} from newsletter?`)) deleteMutation.mutate(s.id); }}
+                      className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
                   </td>
                 </tr>
               ))}
@@ -790,9 +822,16 @@ function NewsletterTab() {
 // ─── Finder Requests Tab ───────────────────────────────────────────────────────
 
 function FinderTab() {
+  const queryClient = useQueryClient();
+
   const { data: submissions, isLoading, error } = useQuery({
     queryKey: ["admin-finder-submissions"],
     queryFn: fetchFinderSubmissions,
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteFinderSubmission,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-finder-submissions"] }),
   });
 
   const handleDownloadCSV = () => {
@@ -844,8 +883,8 @@ function FinderTab() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border text-left">
-                {["Date", "Name", "Email", "Location", "Experience", "Style", "Guests", "Budget", "Matched"].map((h) => (
-                  <th key={h} className="pb-3 pr-4 font-medium text-xs uppercase tracking-wider text-muted-foreground whitespace-nowrap">{h}</th>
+                {["Date", "Name", "Email", "Location", "Experience", "Style", "Guests", "Budget", "Matched", ""].map((h, i) => (
+                  <th key={i} className="pb-3 pr-4 font-medium text-xs uppercase tracking-wider text-muted-foreground whitespace-nowrap">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -872,6 +911,15 @@ function FinderTab() {
                         <span key={cat} className="inline-block text-xs bg-muted px-1.5 py-0.5 rounded whitespace-nowrap">{cat}</span>
                       ))}
                     </div>
+                  </td>
+                  <td className="py-4">
+                    <Button
+                      variant="ghost" size="sm"
+                      onClick={() => { if (confirm(`Delete finder request from ${s.email}?`)) deleteMutation.mutate(s.id); }}
+                      className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
                   </td>
                 </tr>
               ))}

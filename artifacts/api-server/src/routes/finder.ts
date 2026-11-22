@@ -1,7 +1,7 @@
 // artifacts/api-server/src/routes/finder.ts
 
 import { Router, type IRouter } from "express";
-import { db, propertiesTable, finderSubmissionsTable } from "@workspace/db";
+import { db, propertiesTable, finderSubmissionsTable, newsletterSubscribersTable } from "@workspace/db";
 import { inArray, gte, and, sql } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
 import { z } from "zod";
@@ -84,6 +84,23 @@ router.post("/submit", async (req, res): Promise<void> => {
       createdAt: p.createdAt.toISOString(),
       updatedAt: p.updatedAt.toISOString(),
     }));
+
+    // Auto-subscribe to newsletter if the user gave consent
+    if (consentGiven) {
+      try {
+        await db.insert(newsletterSubscribersTable).values({
+          firstName: firstName ?? "",
+          lastName: "",
+          email: email.trim().toLowerCase(),
+        });
+      } catch (newsletterErr: unknown) {
+        const pgErr = newsletterErr as { code?: string };
+        if (pgErr.code !== "23505") {
+          // 23505 = duplicate key (already subscribed) — safe to ignore
+          console.error("[finder/submit] newsletter auto-subscribe error:", newsletterErr);
+        }
+      }
+    }
 
     res.json({
       submissionId: submission.id,
