@@ -5,7 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { NewsletterModal } from "@/components/NewsletterModal";
-import { Snowflake, Flower2, Sun, Leaf } from "lucide-react";
+import { Snowflake, Flower2, Sun, Leaf, ChevronDown } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 type SeasonName = "winter" | "spring" | "summer" | "autumn";
@@ -94,6 +94,7 @@ export function Home() {
   const fallback = getCurrentSeason();
   const [selectedSeason, setSelectedSeason] = useState<SeasonName>(fallback.season);
   const [selectedYear, setSelectedYear] = useState<number>(fallback.year);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   useEffect(() => {
     if (seasons.length === 0) return;
@@ -152,7 +153,12 @@ export function Home() {
       <section ref={picksRef} className="py-16 md:py-24 container mx-auto px-4 md:px-6">
         <div className="mb-8">
           <p className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Seasonal Selection</p>
-          <h2 className="text-3xl md:text-4xl font-serif">{selectedLabel}</h2>
+          <div className="flex items-center gap-2.5">
+            <span className="md:hidden">
+              {(() => { const Icon = SEASON_ICONS[selectedSeason]; return <Icon className="w-6 h-6 stroke-[1.5] text-primary" />; })()}
+            </span>
+            <h2 className="text-3xl md:text-4xl font-serif">{selectedLabel}</h2>
+          </div>
         </div>
 
         {seasonsLoading ? (
@@ -163,7 +169,39 @@ export function Home() {
           <>
 
             {/* Desktop: pill buttons */}
-            <div className="flex gap-1.5 flex-wrap mb-12">
+            {/* Mobile: custom dropdown */}
+            <div className="md:hidden mb-12 relative">
+              <button
+                onClick={() => setDropdownOpen(o => !o)}
+                className="w-full border border-border bg-background text-foreground text-sm font-medium px-4 py-3 flex items-center justify-between"
+              >
+                <span>{selectedLabel}</span>
+                <ChevronDown className={`w-4 h-4 transition-transform duration-150 ${dropdownOpen ? "rotate-180" : ""}`} />
+              </button>
+              {dropdownOpen && (
+                <div className="absolute top-full left-0 right-0 z-20 border border-t-0 border-border bg-background shadow-lg">
+                  {[...seasons].reverse().map((s) => {
+                    const isActive = s.season === selectedSeason && s.year === selectedYear;
+                    return (
+                      <button
+                        key={`${s.season}-${s.year}`}
+                        onClick={() => {
+                          setSelectedSeason(s.season as SeasonName);
+                          setSelectedYear(s.year);
+                          setDropdownOpen(false);
+                        }}
+                        className={`w-full text-left px-4 py-3 text-sm font-medium transition-colors border-b border-border/40 last:border-0 ${
+                          isActive ? "bg-foreground text-background" : "text-foreground hover:bg-muted"
+                        }`}
+                      >
+                        {s.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+                        <div className="hidden md:flex gap-1.5 flex-wrap mb-12">
               {[...seasons].reverse().map((s) => {
                 const isActive = s.season === selectedSeason && s.year === selectedYear;
                 return (
