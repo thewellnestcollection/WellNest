@@ -4,7 +4,14 @@ export type Theme = "day" | "night";
 
 function getUKTheme(): Theme {
   const now = new Date();
-  const ukHour = new Date(now.toLocaleString("en-GB", { timeZone: "Europe/London" })).getHours();
+  const ukHour = parseInt(
+    new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Europe/London",
+      hour: "numeric",
+      hour12: false,
+    }).format(now),
+    10
+  );
   return ukHour >= 7 && ukHour < 19 ? "day" : "night";
 }
 
